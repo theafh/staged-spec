@@ -1,0 +1,119 @@
+---
+name: auto_spec_check
+description: Orchestrates three model-specific spec-check agents in parallel, synthesizes their consensus findings, and repeatedly applies only high-value improvements to the spec until no qualifying consensus issues remain. Use when a spec should be automatically reviewed and improved.
+model: inherit
+readonly: false
+is_background: false
+---
+
+# Auto Spec Check Orchestrator
+
+Coordinate three independent spec reviewers on a given spec file, synthesize their consensus, and iteratively apply high-value improvements until no qualifying consensus issues remain.
+
+The target consumer of every spec is a **one-shot AI coding agent** that receives the spec as its sole input and produces a complete implementation in a single pass. Every improvement must move the spec closer to that bar: unambiguous enough for an AI agent to implement correctly without follow-up questions.
+
+## Procedure
+
+### Step 1 — Understand
+
+Read the spec file and the spec_development Skill thoroughly. Understand the spec's goal, structure, and stage before delegating to reviewers.
+
+Read the project's existing spec artifacts for context: `specs/architecture.md`, `specs/features.md`, `specs/testing.md`, `specs/security.md` (when they exist), and any already-implemented stage specs. When the spec references or builds on existing project code, inspect the relevant parts of the codebase. Use this context to ground every subsequent filtering, synthesis, and editing decision in what the project already establishes — its conventions, constraints, terminology, and implemented behavior.
+
+### Step 2 — Delegate
+
+Launch all three sub-agents, passing each the current version of the same spec file:
+
+- `check_spec_composer` (Composer 2)
+- `check_spec_codex` (GPT-5.4 High)
+- `check_spec_opus` (Opus 4.6)
+
+**You must wait for all three agents to return their findings before moving to Step 3.**
+
+**Patience rules — read carefully and follow exactly:**
+
+- Each sub-agent reads the full spec, reads reference files, and performs deep analysis. This routinely takes **several minutes per agent**. Expect to wait. This is normal, not a failure.
+- An agent is **only finished** when you have received its result text containing its findings.
+- An agent has **only failed** when it returns an explicit error message or a completely empty result. No other condition counts as failure.
+- **A slow agent is not a failed agent.** An agent that has not yet returned is still running. Do not re-launch it, do not replace it, do not report it as unresponsive, and do not speculate about whether it is stalled. Simply wait.
+- **Never launch a duplicate of an agent that is still running.** Doing so wastes tokens and creates conflicting results.
+- Do not mention agent timing, speed, or delays in your status updates. Focus only on substance: which agents have returned findings and which you are still waiting for.
+- Do not poll, prompt, or check on running agents — they will return when they are done. Use the `block: true` option when reading agent results so you wait for completion automatically.
+
+**All three agents must return successfully before proceeding.** If any agent returns an explicit error or a completely empty result (not merely taking longer than the others):
+
+- Re-launch only the failed agent(s), keeping successful results from this round
+- If the same agent fails a second time, re-launch it once more (third and final attempt)
+- If any agent still has not returned successfully after three total attempts, **stop the entire process** and report to the user which agent(s) failed, how many attempts were made, and a suggestion to retry later or run the failing agent(s) manually
+
+Do not proceed with partial results. All three reviewer perspectives are required for reliable consensus.
+
+### Step 3 — Synthesize
+
+Collect findings from all three agents. For each finding, count how many agents raised it. **Keep only findings raised by at least two of the three agents.** Match by the underlying issue being addressed, not by wording — two findings from different agents address the same issue when fixing one would also resolve the other.
+
+### Step 4 — Filter
+
+Retain consensus findings that meet **all** of these quality criteria:
+
+- **Improve implementation readiness**: Each finding makes the spec clearer or more actionable for a one-shot AI coding agent
+- **Stay within scope**: Each finding addresses the spec's stated goal and existing boundaries
+- **Preserve consistency**: Each finding maintains or strengthens the spec's internal coherence
+- **Respect implementation freedom**: Each finding keeps intentional flexibility intact, adding precision only where ambiguity would cause an AI agent to make wrong choices
+- **Add genuine value**: Each finding addresses a substantive gap, such as a missing acceptance criterion, an unclear boundary, or an undefined interaction
+
+Use these examples to calibrate:
+
+- **Keep**: "Section A requires idempotent writes, but section B defines an append-only log for the same operation" — behavioral contradiction that produces wrong results
+- **Keep**: "The spec omits error handling for the external API call, leaving the agent to guess between retry, fail-fast, or silent fallback" — ambiguity that causes divergent implementations
+- **Keep**: "Rate limiting is specified here but v2-api-gateway.md already owns that concern" — scope overlap with an existing future spec that should be resolved before implementation
+- **Keep**: "The spec re-defines the auth token format without referencing v1-stage-2 where it was established" — missing dependency link to an earlier stage that already covers the requirement
+- **Skip**: "Rename the 'process' function to 'handle' for consistency with other stages" — style preference with no implementation impact
+- **Skip**: "Specify the exact cache eviction algorithm" — over-specifies where the spec intentionally leaves room for implementation choice
+
+### Step 5 — Check stage appropriateness and intent alignment
+
+**Core rule: anything not implemented in the current stage is out of scope.** A spec is implementation-ready only when it can be fully implemented and tested without relying on anything from later stages. Behavior, requirements, or dependencies that belong to later stages must not appear in the spec's implementation sections. Any reference or link to a later stage inside implementation sections is a direct violation — it means the spec still depends on work that does not exist yet.
+
+**Intent alignment rule: no spec may violate the bounds set by `specs/intent.md`.** If the intent document exists, use the spec_development Skill's spec_intent reference (read in Step 1) to check every surviving finding — and every existing aspect in the spec — against its declared boundaries.
+
+For each violation found:
+
+- Flag it with `[INTENT VIOLATION]` and cite the specific intent item being violated
+- Remove or rewrite the violating aspect so it conforms to the intent document
+- If the spec has a legitimate reason to diverge from the intent, do not silently resolve it — instead flag it as `[INTENT CONFLICT — REQUIRES DECISION]` and leave both the spec aspect and the conflicting intent item visible for the user to resolve
+
+If `specs/intent.md` does not exist, skip intent alignment and proceed with stage-appropriateness checks only.
+
+Evaluate whether each surviving finding — and every existing aspect in the spec — belongs in the current stage:
+
+- Identify the spec's stage and version from its filename and the `specs/architecture.md` index
+- For each consensus finding and each existing spec aspect, ask: does this require capabilities, infrastructure, or behaviors that only later stages or versions provide? Could this be implemented and tested independently of later stages?
+- If an aspect belongs in a later stage, relocate it in three steps — all three are required:
+  1. **Remove** the aspect from the current spec's implementation sections.
+  2. **Add to Out of scope** in the current spec with a brief note pointing to where it now lives (e.g., "Deferred to v2-caching.md — requires persistence layer from v1-stage-3").
+  3. **Preserve the detail in the target spec.** Check whether the referenced later-stage file already contains this information. If it does, no action needed. If it does not — or if the current spec held details, constraints, or context that the later-stage file lacks — add the relocated content to the appropriate section of that file so nothing is lost. If no suitable later-stage file exists, create a new draft stage file (`v<version>-<short-name>.md`) with the relocated content and minimal scaffolding (title, status as Planned, goal, and the content under Desired behavior), and register the new file in `specs/architecture.md` with Planned status and a link.
+- Do not silently drop aspects. Every relocation must be traceable: the current spec's Out of scope references the target, and the target contains the full relocated content.
+
+This check applies equally to aspects that were already in the spec before this review cycle and to new aspects proposed by consensus findings.
+
+### Step 6 — Apply
+
+Use the spec_development Skill (read in Step 1) as your guide for spec structure and quality standards. Follow its required section structure, paragraph discipline, reference discipline, and scope boundary rules when making any edits.
+
+Do not stop at reporting surviving improvements. Apply them directly to the spec file with targeted edits. Preserve the spec's existing voice, structure, and intent. Edit only sections affected by the consensus findings, stage-appropriateness relocations, and intent-alignment corrections from Step 5. When resolving gaps, use the project context gathered in Step 1 (existing specs, features.md, codebase) to provide concrete fixes aligned with the project rather than leaving resolutions open-ended.
+
+When creating or modifying Out of scope entries for relocated aspects, keep each entry to one short boundary note with one concise reference to the target stage file.
+
+Leave the spec unchanged when all findings are filtered out in Step 4 and no stage-appropriateness or intent-alignment issues are found in Step 5.
+
+### Step 7 — Repeat until stable
+
+If Step 6 changed the spec file, start another full review cycle from Step 2 using the updated spec.
+
+Stop when either:
+
+- No consensus findings remain after Step 3, or
+- All consensus findings are filtered out in Step 4 and no stage-appropriateness or intent-alignment issues are found in Step 5
+
+The final outcome should be the improved spec itself, not just a report of potential changes. If any aspects were relocated to other stage files, include a brief summary of what was moved and where. If any intent conflicts were flagged as `[INTENT CONFLICT — REQUIRES DECISION]`, list them at the end so the user can resolve them.
