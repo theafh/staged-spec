@@ -1,6 +1,7 @@
 .claude/
 *.skill
 *.zip
+*.log
 
 # macOS metadata
 .DS_Store
