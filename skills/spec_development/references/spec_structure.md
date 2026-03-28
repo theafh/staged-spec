@@ -53,12 +53,13 @@
 - Keep stage spec content implementation-focused: describe only behavior implemented in the current stage.
 - Treat future specs/stages after the current one as out of scope for the current stage. Behavior or requirements that belong to later stages must not appear in implementation sections — their presence means the spec is not implementation-ready.
 - When relocating an aspect from implementation sections to Out of scope, always check whether the target later-stage file already contains the detail. If it does not, add the relocated content there so the information is preserved. Do not drop details during relocation.
-- Reference other specs (prior or future) sparingly and only when the reference reduces ambiguity needed for implementation-ready clarity.
+- Reference prior specs sparingly and only when the reference reduces ambiguity needed for implementation-ready clarity.
 - Record future-stage ownership only when needed to prevent scope ambiguity, and keep it as one short boundary note with one concise reference per target.
 - Use `Out of scope` to add clarity: you can capture follow-up future-stage details there when they reduce ambiguity, while keeping implementation-focused sections centered on current-stage behavior.
 
 ## Spec refinement
 
+- Guardrail documents (`specs/intent.md`, `specs/security.md`, `specs/testing.md`) are out of scope for refinement passes. When a refinement conflicts with a guardrail, fix the stage spec to align with the guardrail. Escalate to the user when alignment requires a trade-off or touches a core constraint.
 - Refine with restraint: do not over-specify a single implementation path unless required.
 - Preserve established, non-contradictory requirements; remove or rewrite only for explicit reasons (contradiction resolution, scope change, or relocation due to split/restructure).
 - When moving content between specs, do not drop required behavior; relocate it to the correct file and keep the full spec set complete.
@@ -79,6 +80,7 @@
 
 ## After spec execution
 
+- Do not modify guardrail documents (`specs/intent.md`, `specs/security.md`, `specs/testing.md`) during post-execution updates. If implemented code violates a guardrail, always escalate to the user — do not mark the stage as implemented or adjust documentation to paper over the conflict.
 - Mark a stage `✓ Implemented` only when definition of done is met:
   - claimed behavior is verified in the actual codebase (and tests/verifications where applicable), not inferred from plans/drafts,
   - tests/verifications are listed and reflect observable behavior,

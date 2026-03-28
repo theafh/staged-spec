@@ -30,6 +30,14 @@ External systems this project touches, and the nature of each contract: inbound 
 
 Decisions that look like limitations but are deliberate. These are the things a well-meaning contributor -- or agent -- might "fix" without realizing they're violating intent.
 
+## Modification Rules
+
+The intent document is a guardrail — it governs all other specs but is not governed by them.
+
+- Never create, modify, or delete `specs/intent.md` as a side-effect of stage creation, refinement, implementation, or status updates.
+- Changes require an explicit, direct request from the human user in the current conversation.
+- When a spec change appears to conflict with the intent document, fix the spec to align with the intent. Escalate to the user when alignment requires a trade-off or when the conflict touches a core architectural commitment.
+
 ## Creation Rules
 
 - Each item must be falsifiable -- someone should be able to hold it against a diff, a new spec stage, or an agent's output and get a binary yes/no on consistency.
@@ -41,6 +49,7 @@ Decisions that look like limitations but are deliberate. These are the things a 
 
 When validating specs or code against the intent document, check each item against every intent section:
 
+- **Core Purpose** -- does it solve a different problem or serve a different audience than the one the intent defines?
 - **Architectural Commitments** -- does it introduce a pattern the intent rules out?
 - **Domain Boundaries** -- does it take responsibility for something the intent marks as out of scope, or ignore something the intent marks as in scope?
 - **Key Invariants** -- does it introduce a path that violates a property the intent declares must always hold?
