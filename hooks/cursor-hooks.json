@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "./hooks/protect-guardrails.sh",
+        "type": "command",
+        "timeout": 10,
+        "failClosed": true,
+        "matcher": "Write|Edit"
+      }
+    ]
+  }
+}

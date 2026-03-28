@@ -90,6 +90,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 HOME_DIR="${HOME}"
 
+# jq is required for JSON-merge hook deployment (Claude Code settings.json)
+if ! command -v jq &>/dev/null; then
+  echo "Error: jq is required but not installed." >&2
+  exit 1
+fi
+
 # ---------------------------------------------------------------------------
 # Asset folders — folder name determines artifact type
 # ---------------------------------------------------------------------------
@@ -189,6 +195,15 @@ trap dedupe_deployed_artifact_log EXIT
 
 path_exists() {
   local path="$1"
+
+  # Handle path[key] notation — check the JSON file exists and contains the key
+  if [[ "$path" =~ ^(.+)\[([a-zA-Z_][a-zA-Z0-9_]*)\]$ ]]; then
+    local json_file="${BASH_REMATCH[1]}"
+    local json_key="${BASH_REMATCH[2]}"
+    [[ -f "$json_file" ]] && jq -e ".${json_key}" "$json_file" &>/dev/null
+    return $?
+  fi
+
   [[ -e "$path" || -L "$path" ]]
 }
 
@@ -459,6 +474,83 @@ copy_file() {
 }
 
 # ---------------------------------------------------------------------------
+# Merge a top-level JSON key from a source file into a target JSON file.
+# Creates the target if it doesn't exist. Logs with path[key] notation.
+# An optional hooks_dir rewrites relative ./hooks/ command paths to absolute
+# paths so the config works from any working directory.
+# ---------------------------------------------------------------------------
+merge_json_key() {
+  local source="$1"
+  local target="$2"
+  local key="$3"
+  local target_id="$4"
+  local artifact_type="$5"
+  local hooks_dir="${6:-}"
+
+  if [[ ! -f "$source" ]]; then
+    err "missing" "source not found: $source"
+    return 1
+  fi
+
+  local log_path="${target}[${key}]"
+
+  if $DRY_RUN; then
+    SUMMARY_DEPLOY_ACTIONS=$((SUMMARY_DEPLOY_ACTIONS + 1))
+    info "would-merge" "${target} <- .${key} from ${source}"
+    return 0
+  fi
+
+  local existing="{}"
+  if [[ -f "$target" ]]; then
+    existing="$(cat "$target")"
+  fi
+
+  local patch
+  patch="$(jq ".${key}" "$source")"
+
+  # Rewrite relative ./hooks/ command paths to absolute paths
+  if [[ -n "$hooks_dir" ]]; then
+    patch="$(printf '%s' "$patch" | jq --arg dir "$hooks_dir" '
+      walk(if type == "object" and .command and (.command | startswith("./hooks/"))
+           then .command = ($dir + "/" + (.command | ltrimstr("./hooks/")))
+           else . end)')"
+  fi
+
+  local merged
+  merged="$(printf '%s' "$existing" | jq --argjson patch "$patch" ".${key} = \$patch")"
+
+  printf '%s\n' "$merged" > "$target"
+  ok "merged" "${target} <- .${key}"
+  SUMMARY_DEPLOY_ACTIONS=$((SUMMARY_DEPLOY_ACTIONS + 1))
+  append_deployed_artifact_log "$log_path" "$target_id" "$artifact_type" "$source"
+}
+
+# ---------------------------------------------------------------------------
+# Remove a top-level JSON key from a file. Used during uninstall for
+# artifacts logged with path[key] notation.
+# ---------------------------------------------------------------------------
+strip_json_key() {
+  local target="$1"
+  local key="$2"
+
+  if [[ ! -f "$target" ]]; then
+    return 1
+  fi
+
+  if $DRY_RUN; then
+    SUMMARY_UNINSTALL_ACTIONS=$((SUMMARY_UNINSTALL_ACTIONS + 1))
+    info "would-strip" "${target} .${key}"
+    return 0
+  fi
+
+  local stripped
+  stripped="$(jq "del(.${key})" "$target")"
+  printf '%s\n' "$stripped" > "$target"
+  ok "stripped" "${target} .${key}"
+  SUMMARY_UNINSTALL_ACTIONS=$((SUMMARY_UNINSTALL_ACTIONS + 1))
+}
+
+# ---------------------------------------------------------------------------
 # Generate a .toml command for Gemini CLI from a .md source
 # ---------------------------------------------------------------------------
 generate_toml_command() {
@@ -693,12 +785,34 @@ install_for_app() {
       esac
       ;;
     hook)
-      # Hooks are tool-specific config; symlink to a hooks/ subfolder
+      local src_ext="${source_abs##*.}"
       case "$app_id" in
+        cursor)
+          if [[ "$src_ext" == "json" ]]; then
+            # Only deploy the Cursor-specific config; skip other JSON configs
+            [[ "$source_abs" == *cursor-hooks* ]] || { info "skip" "[$name] not a Cursor hook config"; return 0; }
+            copy_file "$source_abs" "${app_dir}/hooks.json" "$app_id" "$type"
+          elif [[ "$src_ext" == "sh" ]]; then
+            local dest_dir="${app_dir}/hooks"
+            ensure_dir "$dest_dir"
+            local dest_file="${dest_dir}/$(basename "$source_abs")"
+            copy_file "$source_abs" "$dest_file" "$app_id" "$type"
+            if ! $DRY_RUN; then chmod +x "$dest_file"; fi
+          fi
+          ;;
         claude)
-          local dest_dir="${app_dir}/hooks"
-          ensure_dir "$dest_dir"
-          create_symlink "$source_abs" "${dest_dir}/${name}$([[ "$source_abs" == *.* ]] && echo ".${source_abs##*.}")" "$app_id" "$type"
+          if [[ "$src_ext" == "json" ]]; then
+            # Only deploy the Claude Code-specific config; skip other JSON configs
+            [[ "$source_abs" == *claude-code-hooks* ]] || { info "skip" "[$name] not a Claude hook config"; return 0; }
+            # Merge the hooks key into ~/.claude/settings.json with absolute script paths
+            merge_json_key "$source_abs" "${app_dir}/settings.json" "hooks" "$app_id" "$type" "${app_dir}/hooks"
+          elif [[ "$src_ext" == "sh" ]]; then
+            local dest_dir="${app_dir}/hooks"
+            ensure_dir "$dest_dir"
+            local dest_file="${dest_dir}/$(basename "$source_abs")"
+            copy_file "$source_abs" "$dest_file" "$app_id" "$type"
+            if ! $DRY_RUN; then chmod +x "$dest_file"; fi
+          fi
           ;;
         *)
           info "skip" "[$name] Hooks not supported for $app_id"
@@ -799,6 +913,14 @@ logged_type_matches_filter() {
 
 remove_logged_path() {
   local path="$1"
+
+  # Handle path[key] notation — strip a JSON key instead of deleting the file
+  if [[ "$path" =~ ^(.+)\[([a-zA-Z_][a-zA-Z0-9_]*)\]$ ]]; then
+    local json_file="${BASH_REMATCH[1]}"
+    local json_key="${BASH_REMATCH[2]}"
+    strip_json_key "$json_file" "$json_key"
+    return $?
+  fi
 
   if [[ "$path" == "$REPO_ROOT/"* ]]; then
     local repo_rel="${path#"$REPO_ROOT"/}"

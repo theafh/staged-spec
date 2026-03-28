@@ -1,21 +1,20 @@
 # StagedSpec
 
-StagedSpec is a human-steered, AI-assisted methodology for producing implementation-ready software specifications through iterative refinement. It operates inside an agentic coding IDE where a human directs an AI assistant through repeated draft-assess-refine cycles until the spec is good enough for the AI to implement in a single pass.
+StagedSpec is a human-centric methodology for producing implementation-ready software specifications through iterative refinement. It operates inside agentic coding IDEs where a human or an autonomous agent drives repeated draft-assess-refine cycles until the spec is good enough for an AI to implement in a single pass. The methodology is designed for human steering but increasingly supports fully automated refinement, with guardrail documents and verification commands providing the safety boundary that makes autonomous operation possible.
 
 ## Core Model
 
-One spec at a time. The human and AI focus on the next stage to be implemented — like a surfer riding the current wave. The AI has access to all prior specs and a living record of already-implemented features, giving it full project context. Future stages exist as sketches that sharpen only when their turn comes.
+One spec at a time. The human and AI focus on the next stage to be implemented. The AI has access to all prior specs and a living record of already-implemented features, giving it full project context. Future stages exist as sketches that sharpen only when their turn comes.
 
 ## Artifacts
 
-All specs live in a `/specs` folder. Four shared files provide project-wide context:
+All specs live in a `/specs` folder. Five shared files provide project-wide context:
 
 - **`architecture.md`** — single index and entry point. Links every stage, tracks status, lists global constraints, and maintains an out-of-scope section and a future-features list.
 - **`intent.md`** — Project Intent Summary. Captures the non-negotiable identity of the project: core purpose, architectural commitments, domain boundaries, key invariants, integration contracts, and intentional constraints. Every item is falsifiable — it can be held against a diff, a spec, or an agent's output and produce a binary yes/no on consistency. The intent document acts as a guardrail for the entire project, preventing drift in both specs and code even when individual stages are correct in isolation.
 - **`features.md`** — behavior-first record of what the system currently does. Updated immediately after each stage is verified. Describes observable runtime outcomes, not internals.
 - **`testing.md`** — project-wide test methodology, aligned to the stack. Pulled into every spec so testing strategy is consistent.
-
-Optional: **`security.md`** for cross-cutting security constraints.
+- **`security.md`** — cross-cutting security constraints.
 
 Each stage is a single self-contained file following strict naming:
 
@@ -52,13 +51,11 @@ This is where the methodology lives. The cycle:
 4. **Human reads the assessment**, decides what matters, and tells the AI what to change. The human may agree, disagree, reprioritize, or redirect.
 5. **AI revises and re-assesses.** Back to step 3.
 
-The loop repeats until the human decides to stop. Stop signals:
+The loop repeats until the driver decides to stop. In manual mode, the human reads each assessment and steers. In automated mode, the committee agent (see below) runs the loop autonomously, using majority-vote consensus to decide what qualifies as a meaningful improvement. Stop signals are the same either way:
 
-- AI suggestions no longer meaningfully improve the spec
-- AI starts over-specifying or constraining implementation unnecessarily
-- AI begins nitpicking minor wording issues
-
-The human — not the AI — decides when "good enough" is reached. The assessment's severity classifications inform but do not control the decision.
+- Suggestions no longer meaningfully improve the spec
+- The process starts over-specifying or constraining implementation unnecessarily
+- Remaining issues are minor wording or style preferences
 
 ## Research Integration
 
@@ -103,10 +100,28 @@ Commands automate common operations within the StagedSpec workflow:
 
 Together, `spec_create_intent` and `spec_validate_intent` form a project-wide guardrail layer. Individual stage specs ensure each piece is internally sound and implementation-ready. The intent document ensures the pieces stay true to the project's identity -- its commitments, boundaries, invariants, and deliberate constraints. The auto spec check agent also validates intent alignment during its review cycle, so intent violations surface both during automated spec refinement and on-demand validation.
 
+## Guardrail Enforcement
+
+When agents refine specs autonomously, the project needs hard boundaries they cannot cross. Guardrail documents (`intent.md`, `security.md`, `testing.md`) define these boundaries — project-wide invariants that no spec refinement, manual or automated, should change without deliberate intent.
+
+StagedSpec enforces this at two levels. Pre-built hooks for Claude Code and Cursor block file-level edits to guardrail documents unless the active git branch contains both `guardrail` and `spec` in its name (e.g. `guardrail/spec-security-update`). The verification commands (`spec_validate_intent`, `spec_check`) let humans or agents check any spec or code against the guardrails without being able to modify them. Together, this means automated refinement can run freely within the boundaries while the boundaries themselves require a deliberate human action to change.
+
+Hook configs live in `hooks/` and share a single shell script, so the protection logic stays consistent across tools.
+
+## Automated Spec Refinement
+
+StagedSpec supports fully automated spec refinement through a majority-vote committee agent (currently Cursor only). An orchestrator launches three independent reviewers — each running on a different model (Opus, GPT-5.4, Composer 2) — in parallel against the same spec. Only findings raised by at least two of the three reviewers survive as consensus issues. The orchestrator filters these for genuine implementation value, applies the improvements directly to the spec, checks stage appropriateness and intent alignment, then repeats the full cycle until no qualifying consensus issues remain.
+
+This setup replaces human judgement in the refinement loop with model diversity: where a single model might hallucinate an issue or miss one, requiring agreement across architecturally different models filters for real problems. The committee produces high-confidence improvements without human intervention, while guardrail documents and verification commands (see below) ensure the autonomous process stays within project boundaries.
+
+## Multi-Tool Deployment
+
+StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. A deployment script with a per-tool config (`scripts/target_conf.txt`) controls which assets ship to each tool, since not every tool supports every feature (e.g. hooks and agents are excluded where unsupported).
+
 ## Key Properties
 
 - **Single-file contract**: everything the implementer needs is in one stage file. No cross-referencing multiple artifacts.
-- **Human as quality ceiling**: iteration depth matches complexity. Simple stages get 2 rounds, complex integrations get 8. No fixed pipeline.
-- **Minimal artifact overhead**: stage files + three shared files. No per-stage metadata proliferation.
+- **Quality ceiling scales with complexity**: iteration depth matches the stage. Simple stages get 2 rounds, complex integrations get 8. No fixed pipeline — works the same whether a human or the committee agent drives.
+- **Minimal artifact overhead**: stage files + five shared files. No per-stage metadata proliferation.
 - **Organic evolution**: specs sharpen as their turn approaches. Future stages remain adjustable. The system resists premature design lock-in.
 - **Behavior-first documentation**: features.md records what the system does from the outside, not how it works inside.

@@ -20,15 +20,18 @@ disallow:agents/auto_spec_check.md
 disallow:agents/check_spec_codex.md
 disallow:agents/check_spec_composer.md
 disallow:agents/check_spec_opus.md
+disallow:hooks/*
 
 #gemini
 disallow:agents/auto_spec_check.md
 disallow:agents/check_spec_codex.md
 disallow:agents/check_spec_composer.md
 disallow:agents/check_spec_opus.md
+disallow:hooks/*
 
 #antigravity
 disallow:agents/auto_spec_check.md
 disallow:agents/check_spec_codex.md
 disallow:agents/check_spec_composer.md
 disallow:agents/check_spec_opus.md
+disallow:hooks/*
