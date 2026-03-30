@@ -41,7 +41,7 @@ The intent document is a guardrail — it governs all other specs but is not gov
 ## Creation Rules
 
 - Each item must be falsifiable -- someone should be able to hold it against a diff, a new spec stage, or an agent's output and get a binary yes/no on consistency.
-- If the specs are ambiguous or silent on something that should be stated, flag it as `[UNDERSPECIFIED]` rather than inferring intent.
+- If the specs are ambiguous or silent on something that should be stated, flag it as `[UNDERSPECIFIED]` rather than inferring intent. During an interactive session, do not just flag and move on -- actively surface each underspecified area to the user and ask targeted questions to fill the gap before finalizing the document.
 - Prefer 15-25 items total across all sections. Fewer if the system is genuinely simple. More means you're drifting into implementation detail.
 - No implementation details (no file paths, function names, library versions) -- this is a summary of what and why, not how.
 
@@ -55,7 +55,5 @@ When validating specs or code against the intent document, check each item again
 - **Key Invariants** -- does it introduce a path that violates a property the intent declares must always hold?
 - **Integration Contract Surface** -- does it change the nature of an external contract the intent defines?
 - **Intentional Constraints** -- does it remove or work around a limitation the intent marks as deliberate?
-
-For items flagged `[UNDERSPECIFIED]` in the intent document, do not infer intent -- skip that area.
 
 Order violations by how much damage they would cause if shipped. Place the violation most likely to produce a fundamentally wrong outcome first. For each violation, ask: "If this shipped, would the system behave in a way the intent explicitly forbids, or would it merely drift from its intended shape?" The closer the answer is to "explicitly forbidden behavior," the higher it belongs in the list.

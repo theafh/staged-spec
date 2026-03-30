@@ -37,6 +37,7 @@ Rules for guardrail documents:
 
 ## Workflow routing
 
+- When initializing a new project or bootstrapping the `/specs` folder, read [references/spec_initialization.md](references/spec_initialization.md).
 - When creating, refining, or implementing specs, read [references/spec_structure.md](references/spec_structure.md).
 - When reviewing or checking a spec for implementation readiness, read [references/spec_assessment.md](references/spec_assessment.md).
 - When creating, validating, or checking alignment against the project intent, read [references/spec_intent.md](references/spec_intent.md).

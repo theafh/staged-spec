@@ -37,7 +37,7 @@ if [[ "$IS_GUARDRAIL" != "true" ]]; then
   exit 0
 fi
 
-BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
 
 if [[ "$BRANCH" == *guardrail* && "$BRANCH" == *spec* ]]; then
   exit 0
