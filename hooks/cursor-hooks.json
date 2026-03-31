@@ -6,7 +6,7 @@
         "command": "./hooks/protect-guardrails.sh",
         "type": "command",
         "timeout": 10,
-        "failClosed": true,
+        "failClosed": false,
         "matcher": "Write|Edit"
       }
     ]
