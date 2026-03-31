@@ -1,9 +1,9 @@
 ---
 name: check_spec_opus
 description: Reviews specs for implementation readiness using Opus 4.6. Use when spec files are created or modified in the specs/ directory.
-model: claude-opus-4-6
-readonly: true
-is_background: true
+CURSOR_model: claude-opus-4-6
+CURSOR_readonly: true
+CURSOR_is_background: true
 ---
 
 # spec-check

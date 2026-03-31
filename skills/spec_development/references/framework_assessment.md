@@ -9,6 +9,8 @@ Determine whether the spec framework is mature enough that a one-shot AI coding 
 
 Evaluate each dimension and report its state.
 
+Treat stage files marked implemented as historical records during framework assessment: include them in cross-file consistency checks (status markers, dependency chain integrity, terminology consistency, and link validity), and assess stage-level quality/readiness only for stages that are not marked implemented.
+
 ### 1. Index completeness (`architecture.md`)
 
 - Links every existing stage file (planned, in progress, and implemented).

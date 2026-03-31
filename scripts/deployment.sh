@@ -654,7 +654,102 @@ WORKFLOW
 }
 
 # ---------------------------------------------------------------------------
-# Generate a .toml agent for Codex CLI from a Cursor-style .md agent source
+# Rewrite agent frontmatter for a specific target tool.
+#
+# Source .md files may contain vendor-prefixed frontmatter fields:
+#   TOOLNAME_fieldname: value
+# where TOOLNAME is an UPPERCASE target ID (CURSOR, CLAUDE, CODEX, …).
+#
+# For target tool X the rewriter:
+#   1. Keeps non-prefixed lines unchanged (universal fields)
+#   2. Strips the X_ prefix from X_fieldname lines (→ fieldname: value)
+#   3. Drops lines prefixed with any other known tool ID
+#
+# Body content after the closing --- is passed through unchanged.
+# ---------------------------------------------------------------------------
+rewrite_agent_frontmatter() {
+  local source="$1" dest="$2" target_id="$3" quiet="${4:-false}"
+
+  if [[ ! -f "$source" ]]; then
+    err "missing" "source not found: $source"
+    return 1
+  fi
+
+  # Build uppercase target ID for matching
+  local uc_target
+  uc_target="$(printf '%s' "$target_id" | tr '[:lower:]' '[:upper:]')"
+
+  # Build list of ALL known uppercase tool IDs from VALID_TARGETS
+  local known_prefixes=()
+  IFS=',' read -ra _vt <<< "$VALID_TARGETS"
+  for _t in "${_vt[@]}"; do
+    known_prefixes+=("$(printf '%s' "$_t" | tr '[:lower:]' '[:upper:]')")
+  done
+  unset _vt _t
+
+  local in_frontmatter=false frontmatter_done=false
+  local output=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if ! $frontmatter_done && [[ "$line" == "---" ]]; then
+      output+="---"$'\n'
+      if $in_frontmatter; then
+        in_frontmatter=false
+        frontmatter_done=true
+      else
+        in_frontmatter=true
+      fi
+      continue
+    fi
+
+    if $in_frontmatter; then
+      # Check if the line has a TOOLNAME_ prefix (uppercase letters followed by _)
+      if [[ "$line" =~ ^([A-Z]+)_([a-z_]+:[[:space:]]*.+)$ ]]; then
+        local prefix="${BASH_REMATCH[1]}"
+        local rest="${BASH_REMATCH[2]}"
+        # If prefix matches target tool, emit without prefix
+        if [[ "$prefix" == "$uc_target" ]]; then
+          output+="${rest}"$'\n'
+          continue
+        fi
+        # If prefix matches another known tool, drop the line
+        local is_known=false
+        for kp in "${known_prefixes[@]}"; do
+          if [[ "$prefix" == "$kp" ]]; then
+            is_known=true
+            break
+          fi
+        done
+        if $is_known; then
+          continue
+        fi
+      fi
+      # Non-prefixed line or unknown prefix — keep as-is
+      output+="${line}"$'\n'
+      continue
+    fi
+
+    # Body — pass through unchanged
+    output+="${line}"$'\n'
+  done < "$source"
+
+  if $DRY_RUN && ! $quiet; then
+    SUMMARY_DEPLOY_ACTIONS=$((SUMMARY_DEPLOY_ACTIONS + 1))
+    info "would-gen" "$dest (rewritten agent)"
+    return 0
+  fi
+
+  if [[ -L "$dest" || -f "$dest" ]]; then rm "$dest"; fi
+
+  printf '%s' "$output" > "$dest"
+  if ! $quiet; then
+    ok "rewritten" "$dest <- $source (target: $target_id)"
+    SUMMARY_DEPLOY_ACTIONS=$((SUMMARY_DEPLOY_ACTIONS + 1))
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Generate a .toml agent for Codex CLI from a vendor-rewritten .md agent
 # ---------------------------------------------------------------------------
 generate_toml_agent() {
   local source="$1"
@@ -666,6 +761,12 @@ generate_toml_agent() {
     err "missing" "source not found: $source"
     return 1
   fi
+
+  # Rewrite vendor-prefixed frontmatter to a temp file first (quiet mode
+  # suppresses logging and dry-run short-circuit so the file is always written)
+  local tmp_rewritten
+  tmp_rewritten="$(mktemp)"
+  rewrite_agent_frontmatter "$source" "$tmp_rewritten" "$target_id" true
 
   local name="" description="" model="" readonly="" body=""
   local in_frontmatter=false frontmatter_done=false in_body=false
@@ -699,8 +800,9 @@ generate_toml_agent() {
       in_body=true
       body+="${line}"$'\n'
     fi
-  done < "$source"
+  done < "$tmp_rewritten"
 
+  rm -f "$tmp_rewritten"
   body="${body%$'\n'}"
 
   if $DRY_RUN; then
@@ -764,15 +866,12 @@ install_for_app() {
       ;;
     agent)
       case "$app_id" in
-        cursor)
+        cursor|claude|gemini)
           local dest_dir="${app_dir}/agents"
           ensure_dir "$dest_dir"
-          copy_file "$source_abs" "${dest_dir}/${name}.md" "$app_id" "$type"
-          ;;
-        claude|gemini)
-          local dest_dir="${app_dir}/agents"
-          ensure_dir "$dest_dir"
-          create_symlink "$source_abs" "${dest_dir}/${name}.md" "$app_id" "$type"
+          local dest_path="${dest_dir}/${name}.md"
+          rewrite_agent_frontmatter "$source_abs" "$dest_path" "$app_id"
+          $DRY_RUN || append_deployed_artifact_log "$dest_path" "$app_id" "$type" "$source_abs"
           ;;
         codex)
           local dest_dir="${app_dir}/agents"

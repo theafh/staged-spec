@@ -1,9 +1,9 @@
 ---
 name: auto_spec_check
 description: Orchestrates three model-specific spec-check agents in parallel, synthesizes their consensus findings, and repeatedly applies only high-value improvements to the spec until no qualifying consensus issues remain. Use when a spec should be automatically reviewed and improved.
-model: inherit
-readonly: false
-is_background: false
+CURSOR_model: inherit
+CURSOR_readonly: false
+CURSOR_is_background: false
 ---
 
 # Auto Spec Check Orchestrator

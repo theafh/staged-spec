@@ -1,4 +1,4 @@
-# assess_open_specs
+# assess_all_specs
 
 Assess the spec framework as a whole for completeness, coherence, and readiness.
 
