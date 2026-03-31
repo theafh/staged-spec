@@ -1,6 +1,6 @@
-# Spec Structure
+# Single Stage Structure
 
-## Spec creation
+## Stage spec creation
 
 - Use one stage per staged spec file and keep each stage focused on one cohesive, implementable unit.
 - Use consistent staged file naming (use hyphens or underscores as separators, but stay consistent within a project):

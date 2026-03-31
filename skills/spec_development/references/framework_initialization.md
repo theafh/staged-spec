@@ -1,4 +1,4 @@
-# Spec Initialization
+# Framework Initialization
 
 Use this routine when a project has no `/specs` folder or is missing guardrail documents (`intent.md`, `security.md`, `testing.md`). Skip it entirely if the four guardrail and index files already exist in `/specs`: `architecture.md`, `intent.md`, `security.md`, `testing.md`.
 
@@ -56,11 +56,11 @@ Rules for this loop:
 
 **`specs/testing.md`** — Testing strategy aligned to the stack. Cover test levels and purpose, framework choices, coverage policy, CI requirements, and what constitutes a passing build.
 
-**`specs/architecture.md`** — Index file. One-paragraph project summary linking to `specs/intent.md`, global constraints section linking to the other guardrail documents, explicit out-of-scope section, staged specs section, future features list. Follow [spec_structure.md](spec_structure.md).
+**`specs/architecture.md`** — Index file. One-paragraph project summary linking to `specs/intent.md`, global constraints section linking to the other guardrail documents, explicit out-of-scope section, staged specs section, future features list. Follow [single_stage_structure.md](single_stage_structure.md).
 
 **`specs/features.md`** — Only create this file if the project has existing code. Read the code to discover observable behavior and document it in behavior-first form (runtime outcomes, not internals). Do not transcribe implementation details. If the project is greenfield, omit this file entirely — it will be created when the first stage is implemented.
 
-**Initial stage specs (optional)** — Only if scope is clear enough. Draft following [spec_structure.md](spec_structure.md). Do not force it — if scope is still uncertain, stop at architecture.md and let the user drive stage planning through the normal refinement workflow.
+**Initial stage specs (optional)** — Only if scope is clear enough. Draft following [single_stage_structure.md](single_stage_structure.md). Do not force it — if scope is still uncertain, stop at architecture.md and let the user drive stage planning through the normal refinement workflow.
 
 ## Step 3 — Validation pass
 

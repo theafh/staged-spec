@@ -1,6 +1,6 @@
-# Spec Assessment
+# Single Stage Assessment
 
-Assess one or more spec files for implementation readiness. This guide defines the review procedure and output format — not requirements for the specs themselves. Assess spec content and format against the quality criteria in [spec_structure.md](spec_structure.md).
+Assess one or more stage spec files for implementation readiness. This guide defines the review procedure and output format — not requirements for the specs themselves. Assess spec content and format against the quality criteria in [single_stage_structure.md](single_stage_structure.md). For assessing the spec framework as a whole, use [framework_assessment.md](framework_assessment.md).
 
 Apply concise, positive, action-oriented writing throughout the review.
 
