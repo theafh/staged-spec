@@ -1,5 +1,5 @@
 ---
-name: spec-development
+name: spec_development
 description: "StagedSpec: Guides iterative development and assessment of project specs in /specs with an architecture index, staged specs, implemented status tracking, and feature documentation. Use when creating, refining, or checking specs, architecture.md, stage files, features.md, security.md, or testing.md."
 ---
 

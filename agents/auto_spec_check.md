@@ -89,11 +89,51 @@ Evaluate whether each surviving finding — and every existing aspect in the spe
 
 - Identify the spec's stage and version from its filename and the `specs/architecture.md` index
 - For each consensus finding and each existing spec aspect, ask: does this require capabilities, infrastructure, or behaviors that only later stages or versions provide? Could this be implemented and tested independently of later stages?
-- If an aspect belongs in a later stage, relocate it in three steps — all three are required:
-  1. **Remove** the aspect from the current spec's implementation sections.
-  2. **Add to Out of scope** in the current spec with a brief note pointing to where it now lives (e.g., "Deferred to v2-caching.md — requires persistence layer from v1-stage-3").
-  3. **Preserve the detail in the target spec.** Check whether the referenced later-stage file already contains this information. If it does, no action needed. If it does not — or if the current spec held details, constraints, or context that the later-stage file lacks — add the relocated content to the appropriate section of that file so nothing is lost. If no suitable later-stage file exists, create a new draft stage file (`v<version>-<short-name>.md`) with the relocated content and minimal scaffolding (title, status as Planned, goal, and the content under Desired behavior), and register the new file in `specs/architecture.md` with Planned status and a link.
-- Do not silently drop aspects. Every relocation must be traceable: the current spec's Out of scope references the target, and the target contains the full relocated content.
+- Classify each out-of-scope aspect before relocating it. Determine whether it belongs to a later stage within the current version, to a future version, or is a guardrail violation.
+
+Use the following classification paths:
+
+#### Later stage in the current version
+
+Criteria: the aspect does not violate any guardrail document but requires capabilities from a later stage within the same version (e.g., a later v1 stage).
+
+Required actions:
+
+1. **Remove** the aspect from the current spec's implementation sections.
+2. **Preserve the detail in the target spec.** Verify the referenced later-stage file actually exists and is the correct destination — do not assume a filename without checking. If the target file exists, check whether it already contains this information; if not, add the relocated content. If no suitable target exists, create a new draft stage file (`v<version>-stage-<number>-<short-name>.md`) with the relocated content and minimal scaffolding (title, status as Planned, goal, and the content under Desired behavior), register it in `specs/architecture.md` with Planned status and a link. When creating a new file requires renaming an existing unordered spec to a staged filename, use `git mv` to preserve history.
+3. **Add to Out of scope** in the current spec (see format below).
+
+#### Beyond the current version
+
+Criteria: the aspect is legitimate but exceeds what the current version should deliver (e.g., v2/v3 territory). Treat this as a signal against overengineering — the current version should not pre-build for it.
+
+Required actions:
+
+1. **Remove** the aspect from the current spec's implementation sections.
+2. **Preserve the detail in the target spec.** Verify or create a future-version spec file (`v<version>-<short-name>.md`) following the same rules as above. Register it in `specs/architecture.md`.
+3. **Add to Out of scope** in the current spec (see format below).
+
+#### Guardrail violation
+
+Criteria: the aspect contradicts or exceeds the boundaries set by a guardrail document (`specs/intent.md`, `specs/security.md`, `specs/testing.md`). Do not place it in any future stage file.
+
+Required actions:
+
+1. **Remove** the aspect from the current spec's implementation sections.
+2. **Add to the global Out of scope section** in `specs/architecture.md` with a note citing the specific guardrail constraint it violates (e.g., "Rejected — violates intent.md domain boundary: system does not manage user accounts").
+3. **Add to Out of scope** in the current spec (see format below).
+4. **Include in the final summary** so the user is aware of the removal and the guardrail basis for it.
+
+#### Out of scope entry format
+
+Every relocated aspect lands in the current spec's **Out of scope** section. Format each entry as a list item leading with the link to the destination file (future stage spec or `specs/architecture.md`), followed by a comma-separated list of what was moved and why in brackets.
+
+Examples:
+
+- `[v1-stage-3-persistence.md](v1-stage-3-persistence.md) (cache eviction policy, retry backoff — requires persistence layer from stage 3)`
+- `[architecture.md](../architecture.md) (user account management — violates intent.md domain boundary)`
+
+- Do not silently drop aspects. Every relocation of legitimate future work must be traceable: the current spec's Out of scope references the target, and the target contains the full relocated content. Every guardrail-based removal must be traceable in `specs/architecture.md`, the current spec's Out of scope, and the final summary.
 
 This check applies equally to aspects that were already in the spec before this review cycle and to new aspects proposed by consensus findings.
 
