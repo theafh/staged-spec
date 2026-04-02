@@ -20,6 +20,7 @@ GUARDRAIL_PATTERNS=(
 INPUT=$(cat)
 
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+HOOK_CWD=$(echo "$INPUT" | jq -r '.cwd // .tool_input.cwd // empty')
 
 if [[ -z "$FILE_PATH" ]]; then
   exit 0
@@ -37,7 +38,24 @@ if [[ "$IS_GUARDRAIL" != "true" ]]; then
   exit 0
 fi
 
-BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+REPO_ROOT=""
+
+if [[ "$FILE_PATH" = /* ]]; then
+  REPO_ROOT=$(git -C "$(dirname "$FILE_PATH")" rev-parse --show-toplevel 2>/dev/null || true)
+fi
+
+if [[ -z "$REPO_ROOT" && -n "$HOOK_CWD" ]]; then
+  REPO_ROOT=$(git -C "$HOOK_CWD" rev-parse --show-toplevel 2>/dev/null || true)
+fi
+
+if [[ -z "$REPO_ROOT" ]]; then
+  REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
+fi
+
+BRANCH=""
+if [[ -n "$REPO_ROOT" ]]; then
+  BRANCH=$(git -C "$REPO_ROOT" symbolic-ref --short HEAD 2>/dev/null || true)
+fi
 
 if [[ "$BRANCH" == *guardrail* && "$BRANCH" == *spec* ]]; then
   exit 0
