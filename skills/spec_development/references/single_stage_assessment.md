@@ -15,6 +15,7 @@ Read the spec thoroughly and surface any issue that could affect a correct, comp
 - missing or ambiguous requirements that can lead to divergent implementations
 - missing ownership or contract details required for correct implementation
 - stage or dependency inconsistencies across linked specs
+- cross-stage and feature-file consistency: verify that the stage aligns with the feature file and previously implemented stages; flag any requirement that overrides, reverses, contradicts or conflicts with established behavior
 - scope fit against the broader spec set: aspects that duplicate or conflict with what an existing future spec already owns, or that sit outside the current stage's stated boundary
 - later-stage leakage: any behavior, requirement, or dependency that belongs to a stage after the current one must not appear in the spec's implementation sections — the spec must be fully implementable without anything from later stages. References or links to later stages inside implementation sections are a direct signal that the spec is not implementation-ready. Relocated content must never be silently dropped or left without a verified destination. Classify each relocated aspect and determine its correct destination:
   - **Later stage in the current version** (e.g., a later v1 stage): remove from implementation sections, verify the target stage file exists and is the correct destination, and add any detail it lacks. If no suitable target exists, flag that a new stage file must be created.
