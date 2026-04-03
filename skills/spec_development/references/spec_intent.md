@@ -1,59 +1,72 @@
-# Spec Intent
+<task_block>
+  <role>Spec Intent</role>
 
-The Project Intent Summary (`specs/intent.md`) captures the non-negotiable identity of the project. It acts as a guardrail for the entire project -- every spec and every line of code must stay within the bounds it defines.
+  <objective>
+    The Project Intent Summary (`specs/intent.md`) captures the non-negotiable identity of the project. It acts as a guardrail for the entire project -- every spec and every line of code must stay within the bounds it defines.
+  </objective>
 
-## Intent Structure
+  <inputs>
+    <intent_structure>
+      <summary>The intent document uses six sections:</summary>
 
-The intent document uses six sections:
+      <section>
+        <heading>1. Core Purpose (1-2 sentences)</heading>
+        <content>What problem does this system solve, and for whom?</content>
+      </section>
 
-### 1. Core Purpose (1-2 sentences)
+      <section>
+        <heading>2. Architectural Commitments</heading>
+        <content>Non-negotiable structural decisions -- the choices that, if violated, would mean the project has drifted from its intent. Only include commitments that are load-bearing for the project's identity.</content>
+      </section>
 
-What problem does this system solve, and for whom?
+      <section>
+        <heading>3. Domain Boundaries</heading>
+        <content>What this system is explicitly responsible for and what is explicitly out of scope. Frame as "This system DOES X. This system DOES NOT do Y." Be concrete -- vague boundaries don't catch drift.</content>
+      </section>
 
-### 2. Architectural Commitments
+      <section>
+        <heading>4. Key Invariants</heading>
+        <content>Properties that must hold true across all future development. If broken, they indicate either a bug or unintended scope creep.</content>
+      </section>
 
-Non-negotiable structural decisions -- the choices that, if violated, would mean the project has drifted from its intent. Only include commitments that are load-bearing for the project's identity.
+      <section>
+        <heading>5. Integration Contract Surface</heading>
+        <content>External systems this project touches, and the nature of each contract: inbound vs. outbound, sync vs. async, owned vs. consumed. This defines where the system ends and the world begins.</content>
+      </section>
 
-### 3. Domain Boundaries
+      <section>
+        <heading>6. Intentional Constraints</heading>
+        <content>Decisions that look like limitations but are deliberate. These are the things a well-meaning contributor -- or agent -- might "fix" without realizing they're violating intent.</content>
+      </section>
+    </intent_structure>
+  </inputs>
 
-What this system is explicitly responsible for and what is explicitly out of scope. Frame as "This system DOES X. This system DOES NOT do Y." Be concrete -- vague boundaries don't catch drift.
+  <policy>
+    <modification_rules>
+      <summary>The intent document is a guardrail — it governs all other specs but is not governed by them.</summary>
+      <rule>Never create, modify, or delete `specs/intent.md` as a side-effect of stage creation, refinement, implementation, or status updates.</rule>
+      <rule>Changes require an explicit, direct request from the human user in the current conversation.</rule>
+      <rule>When a spec change appears to conflict with the intent document, fix the spec to align with the intent. Escalate to the user when alignment requires a trade-off or when the conflict touches a core architectural commitment.</rule>
+    </modification_rules>
 
-### 4. Key Invariants
+    <creation_rules>
+      <rule>Each item must be falsifiable -- someone should be able to hold it against a diff, a new spec stage, or an agent's output and get a binary yes/no on consistency.</rule>
+      <rule>If the specs are ambiguous or silent on something that should be stated, flag it as `[UNDERSPECIFIED]` rather than inferring intent. During an interactive session, do not just flag and move on -- actively surface each underspecified area to the user and ask targeted questions to fill the gap before finalizing the document.</rule>
+      <rule>Prefer 15-25 items total across all sections. Fewer if the system is genuinely simple. More means you're drifting into implementation detail.</rule>
+      <rule>No implementation details (no file paths, function names, library versions) -- this is a summary of what and why, not how.</rule>
+    </creation_rules>
+  </policy>
 
-Properties that must hold true across all future development. If broken, they indicate either a bug or unintended scope creep.
-
-### 5. Integration Contract Surface
-
-External systems this project touches, and the nature of each contract: inbound vs. outbound, sync vs. async, owned vs. consumed. This defines where the system ends and the world begins.
-
-### 6. Intentional Constraints
-
-Decisions that look like limitations but are deliberate. These are the things a well-meaning contributor -- or agent -- might "fix" without realizing they're violating intent.
-
-## Modification Rules
-
-The intent document is a guardrail — it governs all other specs but is not governed by them.
-
-- Never create, modify, or delete `specs/intent.md` as a side-effect of stage creation, refinement, implementation, or status updates.
-- Changes require an explicit, direct request from the human user in the current conversation.
-- When a spec change appears to conflict with the intent document, fix the spec to align with the intent. Escalate to the user when alignment requires a trade-off or when the conflict touches a core architectural commitment.
-
-## Creation Rules
-
-- Each item must be falsifiable -- someone should be able to hold it against a diff, a new spec stage, or an agent's output and get a binary yes/no on consistency.
-- If the specs are ambiguous or silent on something that should be stated, flag it as `[UNDERSPECIFIED]` rather than inferring intent. During an interactive session, do not just flag and move on -- actively surface each underspecified area to the user and ask targeted questions to fill the gap before finalizing the document.
-- Prefer 15-25 items total across all sections. Fewer if the system is genuinely simple. More means you're drifting into implementation detail.
-- No implementation details (no file paths, function names, library versions) -- this is a summary of what and why, not how.
-
-## Validation Rules
-
-When validating specs or code against the intent document, check each item against every intent section:
-
-- **Core Purpose** -- does it solve a different problem or serve a different audience than the one the intent defines?
-- **Architectural Commitments** -- does it introduce a pattern the intent rules out?
-- **Domain Boundaries** -- does it take responsibility for something the intent marks as out of scope, or ignore something the intent marks as in scope?
-- **Key Invariants** -- does it introduce a path that violates a property the intent declares must always hold?
-- **Integration Contract Surface** -- does it change the nature of an external contract the intent defines?
-- **Intentional Constraints** -- does it remove or work around a limitation the intent marks as deliberate?
-
-Order violations by how much damage they would cause if shipped. Place the violation most likely to produce a fundamentally wrong outcome first. For each violation, ask: "If this shipped, would the system behave in a way the intent explicitly forbids, or would it merely drift from its intended shape?" The closer the answer is to "explicitly forbidden behavior," the higher it belongs in the list.
+  <output_contract>
+    <validation_rules>
+      <summary>When validating specs or code against the intent document, check each item against every intent section:</summary>
+      <rule>**Core Purpose** -- does it solve a different problem or serve a different audience than the one the intent defines?</rule>
+      <rule>**Architectural Commitments** -- does it introduce a pattern the intent rules out?</rule>
+      <rule>**Domain Boundaries** -- does it take responsibility for something the intent marks as out of scope, or ignore something the intent marks as in scope?</rule>
+      <rule>**Key Invariants** -- does it introduce a path that violates a property the intent declares must always hold?</rule>
+      <rule>**Integration Contract Surface** -- does it change the nature of an external contract the intent defines?</rule>
+      <rule>**Intentional Constraints** -- does it remove or work around a limitation the intent marks as deliberate?</rule>
+      <prioritization>Order violations by how much damage they would cause if shipped. Place the violation most likely to produce a fundamentally wrong outcome first. For each violation, ask: "If this shipped, would the system behave in a way the intent explicitly forbids, or would it merely drift from its intended shape?" The closer the answer is to "explicitly forbidden behavior," the higher it belongs in the list.</prioritization>
+    </validation_rules>
+  </output_contract>
+</task_block>
