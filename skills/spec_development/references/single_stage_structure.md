@@ -2,7 +2,7 @@
   <role>Single Stage Structure</role>
 
   <objective>
-    <section>Stage spec creation</section>
+    <section>Stage spec creation and refinement</section>
   </objective>
 
   <inputs>
@@ -21,19 +21,19 @@
     </version_tiers>
     <rule>Enforce version dependency order: each version builds on all prior completed versions, and each numbered stage builds on earlier stages within its version.</rule>
     <rule>Name future spec files without stage numbers until order is committed; when order is committed, rename them to staged filenames that reflect dependency order.</rule>
-    <rule>Use this required stage structure and section titles:</rule>
+    <rule>Use exactly this required stage structure. These sections are the complete and exhaustive set — every piece of stage content belongs in one of these sections. Integrate all information into the matching section; create no additional sections.</rule>
     <required_stage_structure>
       <item>Title line with the stage name</item>
       <item>`**Status**:` Planned | In Progress | ✓ Implemented</item>
       <item>`**Goal**:` one-sentence outcome</item>
-      <item>**Dependencies and prior links**: required prior stage/spec links when this stage extends or builds on them</item>
+      <item>**Dependencies and prior links**: required prior stage/spec links when this stage extends or builds on them. Link each referenced stage with a valid relative markdown link (e.g., `[Stage 1 — Init](v1-stage-1-init.md)`).</item>
       <item>Optional **Read first** for prerequisite docs when relevant (for example `specs/security.md`, `specs/testing.md`)</item>
       <item>**Desired behavior (specification)**</item>
       <item>**Scope boundary**</item>
       <item>**Implementation steps**</item>
       <item>**Tests and verification**</item>
       <item>**Documentation updates**</item>
-      <item>**Out of scope**</item>
+      <item>**Out of scope** — the only section that may contain forward-looking references to later stages or future versions</item>
     </required_stage_structure>
     <rule>Apply paragraph discipline:</rule>
     <paragraph_discipline>
@@ -65,11 +65,16 @@
 
       <subsection name="Scope boundary discipline">
         <rule>Keep stage spec content implementation-focused: describe only behavior implemented in the current stage.</rule>
-        <rule>Treat future specs/stages after the current one as out of scope for the current stage. Behavior or requirements that belong to later stages must not appear in implementation sections — their presence means the spec is not implementation-ready.</rule>
-        <rule>When relocating an aspect from implementation sections to Out of scope, always check whether the target later-stage file already contains the detail. If it does not, add the relocated content there so the information is preserved. Do not drop details during relocation.</rule>
+        <rule>Place all forward-looking references exclusively in the **Out of scope** section. Behavior, requirements, or links that reference stages after the current one belong only there — their presence in any other section means the spec is not implementation-ready.</rule>
         <rule>Reference prior specs sparingly and only when the reference reduces ambiguity needed for implementation-ready clarity.</rule>
-        <rule>Record future-stage ownership only when needed to prevent scope ambiguity, and keep it as one short boundary note with one concise reference per target.</rule>
-        <rule>Use `Out of scope` to add clarity: you can capture follow-up future-stage details there when they reduce ambiguity, while keeping implementation-focused sections centered on current-stage behavior.</rule>
+        <rule>Link every mentioned stage with a valid relative markdown link (e.g., `[Stage 3 — Auth](v1-stage-3-auth.md)`). Bare stage names without links are ambiguous and must be converted to proper links.</rule>
+      </subsection>
+
+      <subsection name="Relocating content to Out of scope">
+        <rule>When moving content from implementation sections to Out of scope, write the relocated detail into the target future-stage file so it remains implementable later. Verify the target file exists and add any detail it lacks.</rule>
+        <rule>Organize the Out of scope section as one bullet point per destination. Each bullet leads with a single link to the destination — a future stage file or `specs/architecture.md` for items globally out of scope — followed by a comma-separated list of the deferred items. Group all items sharing the same destination into one bullet; use one link per bullet, not repeated links.</rule>
+        <rule>Keep Out of scope entries concise: list what was deferred, not why or how it was originally written. Write the removed content into the target stage file so it remains implementable — the Out of scope entry is only the pointer.</rule>
+        <rule>Items that are globally out of scope for the entire project (not deferred to a future stage) go to `specs/architecture.md` and are listed under a single bullet linking there.</rule>
       </subsection>
     </section>
 
