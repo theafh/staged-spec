@@ -9,51 +9,27 @@
     <intent_structure>
       <summary>The intent document uses six sections:</summary>
 
-      <section>
-        <heading>1. Core Purpose (1-2 sentences)</heading>
-        <content>What problem does this system solve, and for whom?</content>
-      </section>
-
-      <section>
-        <heading>2. Architectural Commitments</heading>
-        <content>Non-negotiable structural decisions -- the choices that, if violated, would mean the project has drifted from its intent. Only include commitments that are load-bearing for the project's identity.</content>
-      </section>
-
-      <section>
-        <heading>3. Domain Boundaries</heading>
-        <content>What this system is explicitly responsible for and what is explicitly out of scope. Frame as "This system DOES X. This system DOES NOT do Y." Be concrete -- vague boundaries don't catch drift.</content>
-      </section>
-
-      <section>
-        <heading>4. Key Invariants</heading>
-        <content>Properties that must hold true across all future development. If broken, they indicate either a bug or unintended scope creep.</content>
-      </section>
-
-      <section>
-        <heading>5. Integration Contract Surface</heading>
-        <content>External systems this project touches, and the nature of each contract: inbound vs. outbound, sync vs. async, owned vs. consumed. This defines where the system ends and the world begins.</content>
-      </section>
-
-      <section>
-        <heading>6. Intentional Constraints</heading>
-        <content>Decisions that look like limitations but are deliberate. These are the things a well-meaning contributor -- or agent -- might "fix" without realizing they're violating intent.</content>
-      </section>
+      <core_purpose>What problem does this system solve, and for whom? (1-2 sentences)</core_purpose>
+      <architectural_commitments>Non-negotiable structural decisions -- the choices that, if violated, would mean the project has drifted from its intent. Only include commitments that are load-bearing for the project's identity.</architectural_commitments>
+      <domain_boundaries>What this system is explicitly responsible for and what is explicitly out of scope. Frame as "This system DOES X. This system DOES NOT do Y." Be concrete -- vague boundaries catch nothing.</domain_boundaries>
+      <key_invariants>Properties that must hold true across all future development. If broken, they indicate either a bug or unintended scope creep.</key_invariants>
+      <integration_contract_surface>External systems this project touches, and the nature of each contract: inbound vs. outbound, sync vs. async, owned vs. consumed. This defines where the system ends and the world begins.</integration_contract_surface>
+      <intentional_constraints>Decisions that look like limitations but are deliberate. These are the things a well-meaning contributor -- or agent -- might "fix" without realizing they're violating intent.</intentional_constraints>
     </intent_structure>
   </inputs>
 
   <policy>
     <modification_rules>
       <summary>The intent document is a guardrail — it governs all other specs but is not governed by them.</summary>
-      <rule>Never create, modify, or delete `specs/intent.md` as a side-effect of stage creation, refinement, implementation, or status updates.</rule>
-      <rule>Changes require an explicit, direct request from the human user in the current conversation.</rule>
+      <rule>Changes to `specs/intent.md` require an explicit, direct request from the human user in the current conversation; treat side-effect modifications during stage creation, refinement, implementation, or status updates as out of bounds.</rule>
       <rule>When a spec change appears to conflict with the intent document, fix the spec to align with the intent. Escalate to the user when alignment requires a trade-off or when the conflict touches a core architectural commitment.</rule>
     </modification_rules>
 
     <creation_rules>
       <rule>Each item must be falsifiable -- someone should be able to hold it against a diff, a new spec stage, or an agent's output and get a binary yes/no on consistency.</rule>
-      <rule>If the specs are ambiguous or silent on something that should be stated, flag it as `[UNDERSPECIFIED]` rather than inferring intent. During an interactive session, do not just flag and move on -- actively surface each underspecified area to the user and ask targeted questions to fill the gap before finalizing the document.</rule>
+      <rule>If the specs are ambiguous or silent on something that should be stated, flag it as `[UNDERSPECIFIED]` rather than inferring intent. During an interactive session, actively surface each underspecified area to the user and ask targeted questions to fill the gap before finalizing the document.</rule>
       <rule>Prefer 15-25 items total across all sections. Fewer if the system is genuinely simple. More means you're drifting into implementation detail.</rule>
-      <rule>No implementation details (no file paths, function names, library versions) -- this is a summary of what and why, not how.</rule>
+      <rule>Keep implementation details out (no file paths, function names, library versions) -- this is a summary of what and why, not how.</rule>
     </creation_rules>
   </policy>
 
