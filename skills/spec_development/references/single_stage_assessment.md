@@ -32,6 +32,7 @@
       <rule>logical gaps where specified behavior, commands, scripts, or workflows would fail under the spec's own stated constraints or preconditions</rule>
       <rule>unstated assumptions that an implementer would need to guess at</rule>
       <rule>over-specification: constraints that narrow intentional implementation flexibility without adding correctness value, causing an AI agent to implement a specific design when the spec deliberately left room for implementation choice</rule>
+      <rule>scope sizing: flag stages where the scope is too large for a one-shot implementation pass (would require multiple passes to get right, high risk of partial or incorrect implementation) or too small to deliver meaningful, independently testable behavior (adds coordination overhead without delivering a coherent capability on its own). The target is the most compact scope that still drives meaningful progress</rule>
       <rule>guardrail violations: any aspect of the spec that contradicts or exceeds the boundaries set by the project's guardrail documents (`specs/intent.md`, `specs/security.md`, `specs/testing.md`). When these documents exist, read them and verify the spec stays within their declared constraints — domain boundaries, architectural commitments, key invariants, security requirements, and testing strategy. Flag any spec content that would cause an implementation to violate a guardrail constraint, citing the specific guardrail item being violated</rule>
     </decision_rules>
   </policy>

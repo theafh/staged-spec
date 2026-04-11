@@ -768,7 +768,7 @@ generate_toml_agent() {
   tmp_rewritten="$(mktemp)"
   rewrite_agent_frontmatter "$source" "$tmp_rewritten" "$target_id" true
 
-  local name="" description="" model="" readonly="" body=""
+  local name="" description="" model="" model_reasoning_effort="" readonly="" body=""
   local in_frontmatter=false frontmatter_done=false in_body=false
 
   while IFS= read -r line; do
@@ -789,6 +789,8 @@ generate_toml_agent() {
         description="${BASH_REMATCH[1]}"
       elif [[ "$line" =~ ^model:[[:space:]]*(.+) ]]; then
         model="${BASH_REMATCH[1]}"
+      elif [[ "$line" =~ ^model_reasoning_effort:[[:space:]]*(.+) ]]; then
+        model_reasoning_effort="${BASH_REMATCH[1]}"
       elif [[ "$line" =~ ^readonly:[[:space:]]*(.+) ]]; then
         readonly="${BASH_REMATCH[1]}"
       fi
@@ -817,6 +819,7 @@ generate_toml_agent() {
     [[ -n "$name" ]] && printf 'name = "%s"\n' "${name//\"/\\\"}"
     [[ -n "$description" ]] && printf 'description = "%s"\n' "${description//\"/\\\"}"
     [[ -n "$model" ]] && printf 'model = "%s"\n' "${model//\"/\\\"}"
+    [[ -n "$model_reasoning_effort" ]] && printf 'model_reasoning_effort = "%s"\n' "${model_reasoning_effort//\"/\\\"}"
     if [[ "$readonly" == "true" ]]; then
       printf 'sandbox_mode = "read-only"\n'
     fi

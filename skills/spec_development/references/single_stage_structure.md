@@ -7,6 +7,11 @@
 
   <inputs>
     <rule>Use one stage per staged spec file and keep each stage focused on one cohesive, implementable unit.</rule>
+    <stage_scoping_principle>
+      <rule>Size each stage as the most compact scope that still delivers a meaningful, testable capability — large enough to be a coherent driver of progress, small enough that a one-shot AI coding agent can implement it correctly in a single pass from the spec alone.</rule>
+      <rule>When a stage is too large to implement in one pass, split it into smaller stages that each deliver independently testable behavior.</rule>
+      <rule>When a stage is too small to be meaningful on its own, merge it with an adjacent stage that shares the same cohesive concern.</rule>
+    </stage_scoping_principle>
     <rule>Use consistent staged file naming (use hyphens or underscores as separators, but stay consistent within a project):</rule>
     <naming_options>
       <option>`v&lt;version&gt;-stage-&lt;number&gt;-&lt;short-name&gt;.md` when order is committed.</option>

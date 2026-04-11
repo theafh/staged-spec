@@ -44,6 +44,7 @@
         <criterion>The boundary between consecutive stages is unambiguous: given a requirement, it is obvious which stage owns it.</criterion>
         <criterion>Out-of-scope sections in stage files align with what later stages actually cover.</criterion>
         <criterion>Deferred items in `architecture.md` future-features list are consistent with out-of-scope entries in stage files.</criterion>
+        <criterion>Each stage is sized as the most compact scope that delivers a meaningful, testable capability — large enough to drive coherent progress, small enough for one-shot AI implementation in a single pass.</criterion>
       </scope_distribution>
 
       <version_tier_progression>

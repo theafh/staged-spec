@@ -27,6 +27,7 @@ description: "StagedSpec: Guides iterative development and assessment of project
       <rule>Keep specs contradiction-free and outcome-focused; include implementation detail only when required for correctness, safety, or integration.</rule>
       <rule>Add an explicit out-of-scope section in `specs/architecture.md` to prevent scope creep.</rule>
       <rule>Plan staged work to reduce avoidable refactors by keeping scope cohesive, dependencies explicit, and build order free of forward dependencies.</rule>
+      <rule>Size of each stage must be the most compact scope that delivers a meaningful, testable capability —> the fundamental unit a one-shot AI coding agent can implement correctly in a single pass.</rule>
       <rule>Use the staged plan to guide steady progress while balancing over-engineering with under-specification.</rule>
     </intent>
 
