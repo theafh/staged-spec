@@ -22,11 +22,11 @@ The core cycle: human describes intent, AI drafts a stage spec, AI assesses it f
 
 ```text
 staged-spec/
-  commands/       # Slash commands for spec workflow operations
+  skills/         # Skill definitions — primary workflow entry points
+  commands/       # Legacy slash commands (kept for backward compatibility)
   agents/         # Autonomous agent configs (committee reviewers, orchestrator)
   hooks/          # Guardrail enforcement hooks for Claude Code and Cursor
   scripts/        # Deployment script and per-tool target config
-  skills/         # Skill definitions for agentic IDE integration
 ```
 
 When used in a project, specs live in a `/specs` folder alongside five shared files.
@@ -45,11 +45,11 @@ Five shared files provide project-wide context inside `/specs`:
 
 Each stage is a single self-contained file: `v<version>-stage-<number>-<short-name>.md` (ordered) or `v<version>-<short-name>.md` (unordered future features). See [METHODOLOGY.md](METHODOLOGY.md) for full artifact descriptions and stage structure.
 
-## Commands
+## Skills
 
-These commands automate common operations within the StagedSpec workflow. They are invoked as slash commands in supported agentic IDEs (e.g. `/spec_check` in Claude Code or Cursor).
+Skills are the primary workflow entry points. Each skill is a self-contained definition that works across agentic coding IDEs — Claude Code, Cursor, Codex, Gemini, and Antigravity — without requiring vendor-specific slash-command support. Skills use simple pseudo-XML tags (`<task_block>`, `<role>`, `<objective>`, `<policy>`, `<output_contract>`) to structure their instructions, which improves end-to-end prompt following across different models, vendors, and coding agents.
 
-| Command | What it does |
+| Skill | What it does |
 | :--- | :--- |
 | `spec_check` | Reviews a spec for implementation readiness against quality and structure criteria |
 | `spec_audit` | Audits an implementation against its spec, reporting gaps between specified and built |
@@ -60,9 +60,13 @@ These commands automate common operations within the StagedSpec workflow. They a
 
 `spec_create_intent` and `spec_validate_intent` form a project-wide guardrail layer. Individual stage specs ensure each piece is internally sound. The intent document ensures the pieces stay true to the project's identity.
 
+### Legacy slash commands
+
+The original slash commands (`commands/`) are retained as `*_legacy.md` files for backward compatibility. Slash-command support varies across IDE vendors and is declining, so new workflows should use skills instead. Legacy commands are excluded from deployment via `target_conf.txt`.
+
 ## Deployment
 
-StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool config (`scripts/target_conf.txt`) controls which assets ship to each tool, since not every tool supports every feature (e.g. hooks and agents are excluded where unsupported).
+StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool config (`scripts/target_conf.txt`) controls which assets ship to each tool. The config excludes unsupported features per tool (e.g. hooks and agents where unsupported) and blocks all legacy command files from deployment across every target.
 
 ## Guardrail Enforcement
 
