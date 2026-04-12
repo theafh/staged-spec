@@ -8,14 +8,17 @@
 # Assets listed under disallow: are skipped for that tool.
 
 #cursor
+disallow:*legacy*
 
 #claude
+disallow:*legacy*
 disallow:agents/auto_spec_check.md
 disallow:agents/check_spec_codex.md
 disallow:agents/check_spec_composer.md
 disallow:agents/check_spec_opus.md
 
 #codex
+disallow:*legacy*
 disallow:agents/auto_spec_check.md
 disallow:agents/check_spec_codex.md
 disallow:agents/check_spec_composer.md
@@ -23,6 +26,7 @@ disallow:agents/check_spec_opus.md
 disallow:hooks/*
 
 #gemini
+disallow:*legacy*
 disallow:agents/auto_spec_check.md
 disallow:agents/check_spec_codex.md
 disallow:agents/check_spec_composer.md
@@ -30,6 +34,7 @@ disallow:agents/check_spec_opus.md
 disallow:hooks/*
 
 #antigravity
+disallow:*legacy*
 disallow:agents/auto_spec_check.md
 disallow:agents/check_spec_codex.md
 disallow:agents/check_spec_composer.md
