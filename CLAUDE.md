@@ -14,7 +14,7 @@ StagedSpec is a methodology and deployment framework for producing implementatio
 - **`agents/`** — Autonomous agent configs. `auto_spec_check` orchestrates 3 model-specific reviewers (Opus, Composer, Codex) in parallel for majority-vote consensus. `auto_shape_specs` does framework-wide assessment + autonomous repair.
 - **`hooks/`** — Guardrail enforcement. `protect-guardrails.sh` blocks edits to guardrail docs unless the branch name contains both `guardrail` and `spec`. JSON configs for Claude Code and Cursor.
 - **`skills/spec_development/`** — Core skill definition (`SKILL.md`) with policy and constraints. `references/` subdirectory has detailed guidance for framework initialization, stage structure, stage assessment, framework assessment, and intent documents.
-- **`scripts/`** — `deployment.sh` adapts and deploys assets to multiple IDEs (symlink for Claude Code/Cursor, copy for Cursor agents, format conversion for Codex/Gemini/Antigravity). `target_conf.txt` has per-tool exclusion rules.
+- **`scripts/`** — `deployment.sh` adapts and deploys assets to multiple IDEs (symlink for Claude Code/Cursor, copy for Cursor agents, format conversion for Codex/Gemini/Antigravity). `deployment.conf` is the per-tool deployment configuration file (currently exclusion rules).
 
 ## Key Concepts (target project behavior, not this repo)
 

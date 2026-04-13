@@ -1,6 +1,14 @@
 ---
 name: auto_spec_check
 description: Orchestrates three model-specific spec-check agents in parallel, synthesizes their consensus findings, and repeatedly applies only high-value improvements to the spec until no qualifying consensus issues remain. Use when a spec should be automatically reviewed and improved.
+VSCODE_target: github-copilot
+VSCODE_user-invocable: true
+VSCODE_disable-model-invocation: false
+VSCODE_model: GPT-5.4
+VSCODE_agents:
+  - $AUTO_SPEC_CHECK_A$
+  - $AUTO_SPEC_CHECK_B$
+  - $AUTO_SPEC_CHECK_C$
 CURSOR_model: inherit
 CURSOR_readonly: false
 CURSOR_is_background: false
@@ -24,9 +32,9 @@ Read the project's existing spec artifacts for context: `specs/architecture.md`,
 
 Launch all three sub-agents, passing each the current version of the same spec file:
 
-- `check_spec_composer` (Composer 2)
-- `check_spec_codex` (GPT-5.4 High)
-- `check_spec_opus` (Opus 4.6)
+- `$AUTO_SPEC_CHECK_A$`
+- `$AUTO_SPEC_CHECK_B$`
+- `$AUTO_SPEC_CHECK_C$`
 
 **You must wait for all three agents to return their findings before moving to Step 3.**
 

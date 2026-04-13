@@ -3,19 +3,22 @@ set -euo pipefail
 
 # ---------------------------------------------------------------------------
 # deployment.sh — deploy repo artifacts into global config dirs
-#                 for Cursor, Claude Code, OpenAI Codex, Gemini CLI,
-#                 and Google Antigravity
+#                 for VS Code GitHub Copilot, Cursor, Claude Code,
+#                 OpenAI Codex, Gemini CLI, and Google Antigravity
 #
 # Discovery is folder-based: assets live in top-level folders whose name
 # determines the artifact type (agents/, commands/, skills/, hooks/).
 #
-# Exclusions are controlled by target_conf.txt (robots.txt-style):
-#   #tool           Section heading
-#   disallow:path   Relative path to exclude for that tool
+# Per-tool deployment configuration is loaded from deployment.conf
+# (robots.txt-style). Current directives:
+#   #tool                     Section heading
+#   disallow:path             Relative path to exclude for that tool
+#   replace:path VAR=value    Force copied deployment for matching assets and
+#                             replace $VAR$ in the deployed copy only
 #
 # Features:
 #   --type TYPES     Filter by artifact type (rule,command,skill,agent)
-#   --target TARGETS Filter by deploy target (claude,cursor,codex,gemini,antigravity)
+#   --target TARGETS Filter by deploy target (vscode,claude,cursor,codex,gemini,antigravity)
 #   --dry-run        Preview changes without applying them
 #   --uninstall      Remove previously deployed artifacts from deployed_artefacts.log
 #   --clear-backups  Remove old selected backups before creating new ones
@@ -27,7 +30,7 @@ set -euo pipefail
 #   ./deployment.sh --clear-backups              # drop old backups, then create fresh ones
 #   ./deployment.sh --uninstall                  # uninstall logged artifacts only
 #   ./deployment.sh --type skills,commands       # deploy only skills+commands
-#   ./deployment.sh --target claude,cursor       # deploy only to claude+cursor
+#   ./deployment.sh --target vscode,claude       # deploy only to vscode+claude
 #   ./deployment.sh --dry-run                    # preview mode
 # ---------------------------------------------------------------------------
 
@@ -71,7 +74,7 @@ Usage: deployment.sh [OPTIONS]
 
 Options:
   --type TYPES     Comma-separated artifact types to deploy: command,skill,agent
-  --target TARGETS Comma-separated deploy targets: claude,cursor,codex,gemini,antigravity
+  --target TARGETS Comma-separated deploy targets: vscode,claude,cursor,codex,gemini,antigravity
   --uninstall      Uninstall mode; remove matching logged deployed artifacts after backup
   --clear-backups  Remove old backups for selected targets before creating new backups
   --dry-run        Preview changes without applying them
@@ -114,6 +117,15 @@ CLAUDE_DIR="${HOME_DIR}/.claude"
 CODEX_DIR="${HOME_DIR}/.codex"
 GEMINI_DIR="${HOME_DIR}/.gemini"
 ANTIGRAVITY_DIR="${HOME_DIR}/.gemini/antigravity"
+VSCODE_COPILOT_DIR="${HOME_DIR}/.copilot"
+
+if [[ "$OSTYPE" == darwin* ]]; then
+  VSCODE_PROMPTS_DIR="${HOME_DIR}/Library/Application Support/Code/User/prompts"
+elif [[ "$OSTYPE" == linux* ]]; then
+  VSCODE_PROMPTS_DIR="${HOME_DIR}/.config/Code/User/prompts"
+else
+  VSCODE_PROMPTS_DIR="${HOME_DIR}/.config/Code/User/prompts"
+fi
 
 # Instruction files that need rule references
 CLAUDE_MD="${CLAUDE_DIR}/CLAUDE.md"
@@ -124,7 +136,7 @@ GEMINI_MD="${GEMINI_DIR}/GEMINI.md"
 MARKER_BEGIN="<!-- BEGIN GLOBAL RULES -->"
 MARKER_END="<!-- END GLOBAL RULES -->"
 DEPLOYED_ARTIFACTS_LOG="${SCRIPT_DIR}/deployed_artefacts.log"
-TARGET_CONF="${SCRIPT_DIR}/target_conf.txt"
+DEPLOYMENT_CONF="${SCRIPT_DIR}/deployment.conf"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -228,15 +240,37 @@ matches_filter() {
 }
 
 # ---------------------------------------------------------------------------
-# target_conf.txt parser
+# deployment.conf parser
 #
-# Parses the robots.txt-style config and populates DISALLOW_MAP:
+# Parses per-tool deployment configuration and populates:
 #   DISALLOW_MAP["tool|rel_path"] = 1
+#   REPLACE_RULES+=("tool<TAB>pattern<TAB>var<TAB>value")
 # ---------------------------------------------------------------------------
 declare -A DISALLOW_MAP=()
+declare -a REPLACE_RULES=()
 
-parse_target_conf() {
-  [[ -f "$TARGET_CONF" ]] || return 0
+path_matches_pattern() {
+  local rel_path="$1"
+  local pattern="$2"
+
+  [[ "$rel_path" == "$pattern" ]] && return 0
+
+  # Treat a trailing slash as a subtree match so rules like agents/ apply to
+  # every asset under that directory.
+  if [[ "$pattern" == */ && "$rel_path" == "$pattern"* ]]; then
+    return 0
+  fi
+
+  # shellcheck disable=SC2254
+  case "$rel_path" in
+    $pattern) return 0 ;;
+  esac
+
+  return 1
+}
+
+parse_deployment_conf() {
+  [[ -f "$DEPLOYMENT_CONF" ]] || return 0
 
   local current_tool=""
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -261,8 +295,24 @@ parse_target_conf() {
       disallowed="${disallowed#"${disallowed%%[![:space:]]*}"}"
       disallowed="${disallowed%"${disallowed##*[![:space:]]}"}"
       [[ -n "$disallowed" ]] && DISALLOW_MAP["${current_tool}|${disallowed}"]=1
+      continue
     fi
-  done < "$TARGET_CONF"
+
+    # Replace directive
+    if [[ -n "$current_tool" && "$line" =~ ^replace:([^[:space:]]+)[[:space:]]+([^=[:space:]]+)=(.*)$ ]]; then
+      local replace_path="${BASH_REMATCH[1]}"
+      local replace_var="${BASH_REMATCH[2]}"
+      local replace_value="${BASH_REMATCH[3]}"
+
+      replace_path="${replace_path#"${replace_path%%[![:space:]]*}"}"
+      replace_path="${replace_path%"${replace_path##*[![:space:]]}"}"
+      replace_value="${replace_value#"${replace_value%%[![:space:]]*}"}"
+
+      if [[ -n "$replace_path" && -n "$replace_var" ]]; then
+        REPLACE_RULES+=("${current_tool}"$'\t'"${replace_path}"$'\t'"${replace_var}"$'\t'"${replace_value}")
+      fi
+    fi
+  done < "$DEPLOYMENT_CONF"
 }
 
 # Check if a relative path is disallowed for a given tool.
@@ -274,7 +324,7 @@ is_disallowed() {
   # Exact match
   [[ -n "${DISALLOW_MAP["${tool}|${rel_path}"]+x}" ]] && return 0
 
-  # Check glob patterns
+  # Check configured patterns.
   for key in "${!DISALLOW_MAP[@]}"; do
     local key_tool="${key%%|*}"
     local key_pattern="${key#*|}"
@@ -283,21 +333,36 @@ is_disallowed() {
     # Skip exact matches (already handled)
     [[ "$key_pattern" == "$rel_path" ]] && continue
 
-    # Use bash pattern matching for globs
-    # shellcheck disable=SC2254
-    case "$rel_path" in
-      $key_pattern) return 0 ;;
-    esac
+    path_matches_pattern "$rel_path" "$key_pattern" && return 0
   done
 
   return 1
+}
+
+get_matching_replacements() {
+  local tool="$1"
+  local rel_path="$2"
+  local rule=""
+
+  for rule in "${REPLACE_RULES[@]}"; do
+    local rule_tool=""
+    local rule_pattern=""
+    local rule_var=""
+    local rule_value=""
+    IFS=$'\t' read -r rule_tool rule_pattern rule_var rule_value <<< "$rule"
+
+    [[ "$rule_tool" == "$tool" ]] || continue
+    path_matches_pattern "$rel_path" "$rule_pattern" || continue
+
+    printf '%s=%s\n' "$rule_var" "$rule_value"
+  done
 }
 
 # ---------------------------------------------------------------------------
 # Validate flags
 # ---------------------------------------------------------------------------
 VALID_TYPES="command,skill,agent,hook"
-VALID_TARGETS="claude,cursor,codex,gemini,antigravity"
+VALID_TARGETS="vscode,claude,cursor,codex,gemini,antigravity"
 
 if [[ -n "$TYPE_FILTER" ]]; then
   IFS=',' read -ra _type_items <<< "$TYPE_FILTER"
@@ -327,6 +392,7 @@ fi
 # App targets: id|label|base_dir
 # ---------------------------------------------------------------------------
 ALL_APP_TARGETS=(
+  "vscode|VS Code|${VSCODE_COPILOT_DIR}"
   "cursor|Cursor|${CURSOR_DIR}"
   "claude|Claude Code|${CLAUDE_DIR}"
   "codex|OpenAI Codex|${CODEX_DIR}"
@@ -469,6 +535,99 @@ copy_file() {
 
   cp "$source" "$target"
   ok "copied" "$target <- $source"
+  SUMMARY_DEPLOY_ACTIONS=$((SUMMARY_DEPLOY_ACTIONS + 1))
+  append_deployed_artifact_log "$target" "$target_id" "$artifact_type" "$source"
+}
+
+apply_replacements_to_file() {
+  local file="$1"
+  shift
+
+  [[ -f "$file" ]] || return 0
+
+  if [[ -s "$file" ]] && ! grep -Iq . "$file" 2>/dev/null; then
+    return 0
+  fi
+
+  local spec=""
+  for spec in "$@"; do
+    local variable_name="${spec%%=*}"
+    local replacement_value="${spec#*=}"
+    local placeholder="\$${variable_name}\$"
+
+    PLACEHOLDER="$placeholder" REPLACEMENT_VALUE="$replacement_value" \
+      perl -0pi -e 'my $placeholder = $ENV{PLACEHOLDER}; my $replacement_value = $ENV{REPLACEMENT_VALUE}; s/\Q$placeholder\E/$replacement_value/g;' "$file"
+  done
+}
+
+apply_replacements_to_path() {
+  local target="$1"
+  shift
+
+  [[ $# -gt 0 ]] || return 0
+
+  if [[ -f "$target" ]]; then
+    apply_replacements_to_file "$target" "$@"
+    return 0
+  fi
+
+  if [[ -d "$target" ]]; then
+    local file=""
+    while IFS= read -r -d '' file; do
+      apply_replacements_to_file "$file" "$@"
+    done < <(find "$target" -type f -print0)
+  fi
+}
+
+maybe_apply_replacements() {
+  local target="$1"
+  shift
+
+  [[ $# -gt 0 ]] || return 0
+
+  if $DRY_RUN; then
+    info "would-sub" "$target ($# replacement(s))"
+    return 0
+  fi
+
+  apply_replacements_to_path "$target" "$@"
+  ok "replaced" "$target"
+}
+
+copy_path_with_replacements() {
+  local source="$1"
+  local target="$2"
+  local target_id="$3"
+  local artifact_type="$4"
+  shift 4
+  local replacements=("$@")
+
+  if [[ ! -e "$source" ]]; then
+    err "missing" "source not found: $source"
+    return 1
+  fi
+
+  if $DRY_RUN; then
+    SUMMARY_DEPLOY_ACTIONS=$((SUMMARY_DEPLOY_ACTIONS + 1))
+    info "would-copy" "$target <- $source"
+    [[ ${#replacements[@]} -gt 0 ]] && info "would-sub" "$target (${#replacements[@]} replacement(s))"
+    return 0
+  fi
+
+  if [[ -L "$target" || -f "$target" ]]; then
+    rm -f "$target"
+  elif [[ -d "$target" ]]; then
+    rm -rf "$target"
+  fi
+
+  if [[ -d "$source" ]]; then
+    cp -R "$source" "$target"
+  else
+    cp "$source" "$target"
+  fi
+
+  ok "copied" "$target <- $source"
+  maybe_apply_replacements "$target" "${replacements[@]}"
   SUMMARY_DEPLOY_ACTIONS=$((SUMMARY_DEPLOY_ACTIONS + 1))
   append_deployed_artifact_log "$target" "$target_id" "$artifact_type" "$source"
 }
@@ -658,7 +817,7 @@ WORKFLOW
 #
 # Source .md files may contain vendor-prefixed frontmatter fields:
 #   TOOLNAME_fieldname: value
-# where TOOLNAME is an UPPERCASE target ID (CURSOR, CLAUDE, CODEX, …).
+# where TOOLNAME is an UPPERCASE target ID (VSCODE, CURSOR, CLAUDE, CODEX, …).
 #
 # For target tool X the rewriter:
 #   1. Keeps non-prefixed lines unchanged (universal fields)
@@ -688,6 +847,7 @@ rewrite_agent_frontmatter() {
   unset _vt _t
 
   local in_frontmatter=false frontmatter_done=false
+  local skip_prefixed_block=false
   local output=""
 
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -703,8 +863,15 @@ rewrite_agent_frontmatter() {
     fi
 
     if $in_frontmatter; then
+      if $skip_prefixed_block; then
+        if [[ -z "$line" || "$line" == [[:space:]]* ]]; then
+          continue
+        fi
+        skip_prefixed_block=false
+      fi
+
       # Check if the line has a TOOLNAME_ prefix (uppercase letters followed by _)
-      if [[ "$line" =~ ^([A-Z]+)_([a-z_]+:[[:space:]]*.+)$ ]]; then
+      if [[ "$line" =~ ^([A-Z]+)_([A-Za-z0-9_-]+:.*)$ ]]; then
         local prefix="${BASH_REMATCH[1]}"
         local rest="${BASH_REMATCH[2]}"
         # If prefix matches target tool, emit without prefix
@@ -721,6 +888,7 @@ rewrite_agent_frontmatter() {
           fi
         done
         if $is_known; then
+          skip_prefixed_block=true
           continue
         fi
       fi
@@ -835,51 +1003,96 @@ generate_toml_agent() {
 # Install a single artifact into one app target
 # ---------------------------------------------------------------------------
 install_for_app() {
-  local app_id="$1" app_dir="$2" name="$3" type="$4" source_abs="$5"
+  local app_id="$1" app_dir="$2" name="$3" type="$4" source_abs="$5" rel_path="$6"
+  local replacement_specs=()
+  local spec=""
+
+  while IFS= read -r spec; do
+    [[ -n "$spec" ]] && replacement_specs+=("$spec")
+  done < <(get_matching_replacements "$app_id" "$rel_path")
 
   case "$type" in
     command)
       case "$app_id" in
+        vscode)
+          ensure_dir "$VSCODE_PROMPTS_DIR"
+          local dest_path="${VSCODE_PROMPTS_DIR}/${name}.prompt.md"
+          if [[ ${#replacement_specs[@]} -gt 0 ]]; then
+            copy_path_with_replacements "$source_abs" "$dest_path" "$app_id" "$type" "${replacement_specs[@]}"
+          else
+            create_symlink "$source_abs" "$dest_path" "$app_id" "$type"
+          fi
+          ;;
         gemini)
           local dest_dir="${app_dir}/commands"
           ensure_dir "$dest_dir"
-          generate_toml_command "$source_abs" "${dest_dir}/${name}.toml" "$app_id" "$type"
+          local dest_path="${dest_dir}/${name}.toml"
+          generate_toml_command "$source_abs" "$dest_path" "$app_id" "$type"
+          maybe_apply_replacements "$dest_path" "${replacement_specs[@]}"
           ;;
         antigravity)
           local dest_dir="${app_dir}/workflows"
           ensure_dir "$dest_dir"
-          generate_antigravity_workflow "$source_abs" "${dest_dir}/${name}.md" "$app_id" "$type"
+          local dest_path="${dest_dir}/${name}.md"
+          generate_antigravity_workflow "$source_abs" "$dest_path" "$app_id" "$type"
+          maybe_apply_replacements "$dest_path" "${replacement_specs[@]}"
           ;;
         codex)
           local dest_dir="${app_dir}/prompts"
           ensure_dir "$dest_dir"
-          create_symlink "$source_abs" "${dest_dir}/${name}.md" "$app_id" "$type"
+          local dest_path="${dest_dir}/${name}.md"
+          if [[ ${#replacement_specs[@]} -gt 0 ]]; then
+            copy_path_with_replacements "$source_abs" "$dest_path" "$app_id" "$type" "${replacement_specs[@]}"
+          else
+            create_symlink "$source_abs" "$dest_path" "$app_id" "$type"
+          fi
           ;;
         *)
           local dest_dir="${app_dir}/commands"
           ensure_dir "$dest_dir"
-          create_symlink "$source_abs" "${dest_dir}/${name}.md" "$app_id" "$type"
+          local dest_path="${dest_dir}/${name}.md"
+          if [[ ${#replacement_specs[@]} -gt 0 ]]; then
+            copy_path_with_replacements "$source_abs" "$dest_path" "$app_id" "$type" "${replacement_specs[@]}"
+          else
+            create_symlink "$source_abs" "$dest_path" "$app_id" "$type"
+          fi
           ;;
       esac
       ;;
     skill)
       local dest_dir="${app_dir}/skills"
       ensure_dir "$dest_dir"
-      create_symlink "$source_abs" "${dest_dir}/${name}" "$app_id" "$type"
+      local dest_path="${dest_dir}/${name}"
+      if [[ ${#replacement_specs[@]} -gt 0 ]]; then
+        copy_path_with_replacements "$source_abs" "$dest_path" "$app_id" "$type" "${replacement_specs[@]}"
+      else
+        create_symlink "$source_abs" "$dest_path" "$app_id" "$type"
+      fi
       ;;
     agent)
       case "$app_id" in
+        vscode)
+          local dest_dir="${app_dir}/agents"
+          ensure_dir "$dest_dir"
+          local dest_path="${dest_dir}/${name}.agent.md"
+          rewrite_agent_frontmatter "$source_abs" "$dest_path" "$app_id"
+          $DRY_RUN || append_deployed_artifact_log "$dest_path" "$app_id" "$type" "$source_abs"
+          maybe_apply_replacements "$dest_path" "${replacement_specs[@]}"
+          ;;
         cursor|claude|gemini)
           local dest_dir="${app_dir}/agents"
           ensure_dir "$dest_dir"
           local dest_path="${dest_dir}/${name}.md"
           rewrite_agent_frontmatter "$source_abs" "$dest_path" "$app_id"
           $DRY_RUN || append_deployed_artifact_log "$dest_path" "$app_id" "$type" "$source_abs"
+          maybe_apply_replacements "$dest_path" "${replacement_specs[@]}"
           ;;
         codex)
           local dest_dir="${app_dir}/agents"
           ensure_dir "$dest_dir"
-          generate_toml_agent "$source_abs" "${dest_dir}/${name}.toml" "$app_id" "$type"
+          local dest_path="${dest_dir}/${name}.toml"
+          generate_toml_agent "$source_abs" "$dest_path" "$app_id" "$type"
+          maybe_apply_replacements "$dest_path" "${replacement_specs[@]}"
           ;;
         antigravity)
           info "skip" "[$name] Antigravity does not support agent definitions"
@@ -889,16 +1102,38 @@ install_for_app() {
     hook)
       local src_ext="${source_abs##*.}"
       case "$app_id" in
+        vscode)
+          local dest_dir="${app_dir}/hooks"
+          ensure_dir "$dest_dir"
+          local dest_file
+          dest_file="${dest_dir}/$(basename "$source_abs")"
+          if [[ ${#replacement_specs[@]} -gt 0 ]]; then
+            copy_path_with_replacements "$source_abs" "$dest_file" "$app_id" "$type" "${replacement_specs[@]}"
+          else
+            copy_file "$source_abs" "$dest_file" "$app_id" "$type"
+          fi
+          if [[ "$src_ext" == "sh" && ! $DRY_RUN ]]; then chmod +x "$dest_file"; fi
+          ;;
         cursor)
           if [[ "$src_ext" == "json" ]]; then
             # Only deploy the Cursor-specific config; skip other JSON configs
             [[ "$source_abs" == *cursor-hooks* ]] || { info "skip" "[$name] not a Cursor hook config"; return 0; }
-            copy_file "$source_abs" "${app_dir}/hooks.json" "$app_id" "$type"
+            local dest_path="${app_dir}/hooks.json"
+            if [[ ${#replacement_specs[@]} -gt 0 ]]; then
+              copy_path_with_replacements "$source_abs" "$dest_path" "$app_id" "$type" "${replacement_specs[@]}"
+            else
+              copy_file "$source_abs" "$dest_path" "$app_id" "$type"
+            fi
           elif [[ "$src_ext" == "sh" ]]; then
             local dest_dir="${app_dir}/hooks"
             ensure_dir "$dest_dir"
-            local dest_file="${dest_dir}/$(basename "$source_abs")"
-            copy_file "$source_abs" "$dest_file" "$app_id" "$type"
+            local dest_file
+            dest_file="${dest_dir}/$(basename "$source_abs")"
+            if [[ ${#replacement_specs[@]} -gt 0 ]]; then
+              copy_path_with_replacements "$source_abs" "$dest_file" "$app_id" "$type" "${replacement_specs[@]}"
+            else
+              copy_file "$source_abs" "$dest_file" "$app_id" "$type"
+            fi
             if ! $DRY_RUN; then chmod +x "$dest_file"; fi
           fi
           ;;
@@ -911,8 +1146,13 @@ install_for_app() {
           elif [[ "$src_ext" == "sh" ]]; then
             local dest_dir="${app_dir}/hooks"
             ensure_dir "$dest_dir"
-            local dest_file="${dest_dir}/$(basename "$source_abs")"
-            copy_file "$source_abs" "$dest_file" "$app_id" "$type"
+            local dest_file
+            dest_file="${dest_dir}/$(basename "$source_abs")"
+            if [[ ${#replacement_specs[@]} -gt 0 ]]; then
+              copy_path_with_replacements "$source_abs" "$dest_file" "$app_id" "$type" "${replacement_specs[@]}"
+            else
+              copy_file "$source_abs" "$dest_file" "$app_id" "$type"
+            fi
             if ! $DRY_RUN; then chmod +x "$dest_file"; fi
           fi
           ;;
@@ -1135,11 +1375,11 @@ $UNINSTALL && echo "Uninstall:     enabled"
 $CLEAR_BACKUPS && echo "Clear backups: enabled"
 [[ -n "$TYPE_FILTER" ]] && echo "Types:         $TYPE_FILTER"
 [[ -n "$TARGET_FILTER" ]] && echo "Targets:       $TARGET_FILTER"
-[[ -f "$TARGET_CONF" ]] && echo "Config:        $TARGET_CONF"
+[[ -f "$DEPLOYMENT_CONF" ]] && echo "Config:        $DEPLOYMENT_CONF"
 echo ""
 
-# Parse target_conf.txt
-parse_target_conf
+# Parse deployment.conf
+parse_deployment_conf
 
 # ---------------------------------------------------------------------------
 # Backup activated targets only
@@ -1150,17 +1390,23 @@ echo ""
 declare -A backed_up=()
 for target in "${APP_TARGETS[@]}"; do
   IFS='|' read -r app_id _label base_dir <<< "$target"
-  backup_root="$base_dir"
+  backup_roots=("$base_dir")
   if [[ "$app_id" == "antigravity" ]]; then
-    backup_root="${GEMINI_DIR}"
+    backup_roots=("${GEMINI_DIR}")
+  elif [[ "$app_id" == "vscode" ]]; then
+    backup_roots=("${VSCODE_COPILOT_DIR}" "${VSCODE_PROMPTS_DIR}")
   fi
-  if [[ -z "${backed_up[$backup_root]+x}" ]]; then
-    if $CLEAR_BACKUPS; then
-      clear_old_backups_for_app_dir "$backup_root"
+
+  local_backup_root=""
+  for local_backup_root in "${backup_roots[@]}"; do
+    if [[ -z "${backed_up[$local_backup_root]+x}" ]]; then
+      if $CLEAR_BACKUPS; then
+        clear_old_backups_for_app_dir "$local_backup_root"
+      fi
+      backup_app_dir "$local_backup_root"
+      backed_up["$local_backup_root"]=1
     fi
-    backup_app_dir "$backup_root"
-    backed_up["$backup_root"]=1
-  fi
+  done
 done
 
 echo ""
@@ -1219,13 +1465,13 @@ for entry in "${ARTIFACTS[@]}"; do
   for target in "${APP_TARGETS[@]}"; do
     IFS='|' read -r app_id _ base_dir <<< "$target"
 
-    # Check target_conf.txt disallow rules
+    # Check deployment.conf disallow rules
     if is_disallowed "$app_id" "$rel_path"; then
-      info "disallow" "[$name] excluded for $app_id (target_conf.txt)"
+      info "disallow" "[$name] excluded for $app_id (deployment.conf)"
       continue
     fi
 
-    install_for_app "$app_id" "$base_dir" "$name" "$type" "$source_abs"
+    install_for_app "$app_id" "$base_dir" "$name" "$type" "$source_abs" "$rel_path"
   done
 
   echo ""

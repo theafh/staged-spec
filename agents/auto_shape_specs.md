@@ -1,6 +1,11 @@
 ---
 name: auto_shape_specs
 description: Assesses the spec framework for structural issues, then autonomously fixes every issue it finds. Use when the spec framework needs a full health check and automated repair.
+VSCODE_target: github-copilot
+VSCODE_user-invocable: true
+VSCODE_disable-model-invocation: false
+VSCODE_model: GPT-5.4
+VSCODE_agents: []
 CURSOR_model: inherit
 CLAUDE_model: inherit
 CLAUDE_background: false

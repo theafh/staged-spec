@@ -62,11 +62,11 @@ Skills are the primary workflow entry points. Each skill is a self-contained def
 
 ### Legacy slash commands
 
-The original slash commands (`commands/`) are retained as `*_legacy.md` files for backward compatibility. Slash-command support varies across IDE vendors and is declining, so new workflows should use skills instead. Legacy commands are excluded from deployment via `target_conf.txt`.
+The original slash commands (`commands/`) are retained as `*_legacy.md` files for backward compatibility. Slash-command support varies across IDE vendors and is declining, so new workflows should use skills instead. Legacy commands are excluded from deployment via `deployment.conf` rules.
 
 ## Deployment
 
-StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool config (`scripts/target_conf.txt`) controls which assets ship to each tool. The config excludes unsupported features per tool (e.g. hooks and agents where unsupported) and blocks all legacy command files from deployment across every target.
+StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool configuration file (`scripts/deployment.conf`) controls which assets ship to each tool. The current rules exclude unsupported features per tool (e.g. hooks and agents where unsupported) and block all legacy command files from deployment across every target.
 
 ## Guardrail Enforcement
 

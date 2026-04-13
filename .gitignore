@@ -2,6 +2,7 @@
 *.skill
 *.zip
 *.log
+/docs
 
 # macOS metadata
 .DS_Store

@@ -1,6 +1,11 @@
 ---
 name: check_spec_gemini
 description: Reviews specs for implementation readiness using Gemini 3.1 Pro. Use when spec files are created or modified in the specs/ directory.
+VSCODE_target: github-copilot
+VSCODE_user-invocable: false
+VSCODE_disable-model-invocation: false
+VSCODE_model: gemini-3.1-pro
+VSCODE_agents: []
 CURSOR_model: gemini-3.1-pro
 CURSOR_readonly: true
 CURSOR_is_background: true
