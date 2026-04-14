@@ -4,7 +4,7 @@ description: Reviews specs for implementation readiness using Opus 4.6. Use when
 VSCODE_target: github-copilot
 VSCODE_user-invocable: false
 VSCODE_disable-model-invocation: false
-VSCODE_model: claude-opus-4.6
+VSCODE_model: Claude Opus 4.6
 VSCODE_agents: []
 CURSOR_model: claude-4.6-opus-high-thinking
 CURSOR_readonly: true

@@ -4,7 +4,7 @@ description: Reviews specs for implementation readiness using Gemini 3.1 Pro. Us
 VSCODE_target: github-copilot
 VSCODE_user-invocable: false
 VSCODE_disable-model-invocation: false
-VSCODE_model: gemini-3.1-pro
+VSCODE_model: Gemini 3.1 Pro (Preview)
 VSCODE_agents: []
 CURSOR_model: gemini-3.1-pro
 CURSOR_readonly: true

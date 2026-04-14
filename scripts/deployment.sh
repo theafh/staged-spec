@@ -1157,7 +1157,7 @@ install_for_app() {
           fi
           ;;
         *)
-          info "skip" "[$name] Hooks not supported for $app_id"
+          info "skip" "[$name] Hook deployment not implemented for $app_id"
           ;;
       esac
       ;;

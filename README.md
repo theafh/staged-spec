@@ -25,7 +25,7 @@ staged-spec/
   skills/         # Skill definitions — primary workflow entry points
   commands/       # Legacy slash commands (kept for backward compatibility)
   agents/         # Autonomous agent configs (committee reviewers, orchestrator)
-  hooks/          # Guardrail enforcement hooks for Claude Code and Cursor
+  hooks/          # Guardrail enforcement hook assets; currently deployed for Claude Code and Cursor
   scripts/        # Deployment script and per-tool target config
 ```
 
@@ -66,11 +66,11 @@ The original slash commands (`commands/`) are retained as `*_legacy.md` files fo
 
 ## Deployment
 
-StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool configuration file (`scripts/deployment.conf`) controls which assets ship to each tool. The current rules exclude unsupported features per tool (e.g. hooks and agents where unsupported) and block all legacy command files from deployment across every target.
+StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool configuration file (`scripts/deployment.conf`) controls which assets ship to each tool. The current rules exclude unsupported or not-yet-wired features per tool and block all legacy command files from deployment across every target. For example, Codex hook support exists in Codex itself but is not yet deployed by this repo.
 
 ## Guardrail Enforcement
 
-Guardrail documents (`intent.md`, `security.md`, `testing.md`) define hard boundaries that no spec refinement should cross. Pre-built hooks block edits to these files unless the git branch name signals deliberate intent. Verification commands check specs and code against the guardrails without being able to modify them. See [METHODOLOGY.md](METHODOLOGY.md) for details on hook configuration and enforcement levels.
+Guardrail documents (`intent.md`, `security.md`, `testing.md`) define hard boundaries that no spec refinement should cross. Pre-built hooks block edits to these files unless the git branch name signals deliberate intent. This repo currently ships those hook configs for Claude Code and Cursor; Codex hook deployment is not wired yet. Verification commands check specs and code against the guardrails without being able to modify them. See [METHODOLOGY.md](METHODOLOGY.md) for details on hook configuration and enforcement levels.
 
 ## License
 

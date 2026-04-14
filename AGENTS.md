@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -14,9 +14,9 @@ StagedSpec is a methodology for producing implementation-ready software specific
 
 - **`commands/`** — `assess_all_specs` is the only active command. The remaining `*_legacy.md` files are preserved for backward compatibility with older deployments. Most command functionality has moved to standalone skills.
 - **`skills/`** — Seven standalone skills (`spec_audit`, `spec_check`, `spec_create_intent`, `spec_feature_update`, `spec_implement`, `spec_validate_intent`, `spec_development`) each with their own `SKILL.md`. `spec_development` is the core skill with a `references/` subdirectory containing detailed guidance for framework initialization, stage structure, stage assessment, framework assessment, and intent documents. The other six are thin skills that delegate to `spec_development` references.
-- **`agents/`** — Autonomous agent configs. `auto_spec_check` orchestrates 3 model-specific reviewers in parallel for majority-vote consensus — the reviewer triplet varies by IDE (configured via `deployment.conf`). `auto_shape_specs` is a standalone single-model agent for framework-wide assessment and autonomous repair that works in any IDE supporting agent files. See `agents/README.md` for model restrictions and IDE-specific details.
-- **`hooks/`** — Guardrail enforcement. `protect-guardrails.sh` blocks edits to guardrail docs unless the branch name contains both `guardrail` and `spec`. JSON configs for Claude Code and Cursor.
-- **`scripts/`** — `deployment.sh` adapts and deploys assets to multiple IDEs (symlink for Claude Code/Cursor, copy for Cursor agents, format conversion for Codex/Gemini/Antigravity). `deployment.conf` configures per-tool exclusion rules and placeholder replacements (e.g., reviewer agent triplet selection).
+- **`agents/`** — Autonomous agent configs. `auto_spec_check` orchestrates 3 model-specific reviewers in parallel for majority-vote consensus, but it is not deployed to Codex; `auto_shape_specs` is the Codex-relevant standalone agent. The reviewer triplet for `auto_spec_check` varies by IDE and is configured via `deployment.conf`. See `agents/README.md` for model restrictions and IDE-specific details.
+- **`hooks/`** — Guardrail enforcement assets. This repo currently ships tested hook configs for Claude Code and Cursor. Codex has experimental `hooks.json` support, but this repo does not deploy Codex hooks yet and `deployment.conf` explicitly excludes `hooks/*` for the Codex target.
+- **`scripts/`** — `deployment.sh` adapts and deploys assets to multiple IDEs. For Codex, skills are symlinked into `~/.codex/skills/`, commands are symlinked into `~/.codex/prompts/`, and agents are rewritten into `.toml` files under `~/.codex/agents/`. `deployment.conf` configures per-tool exclusion rules and placeholder replacements (e.g. reviewer agent triplet selection).
 
 ## Key Concepts (target project behavior, not this repo)
 
@@ -44,6 +44,12 @@ The primary artifacts in this repo are LLM instruction prompts (skills, commands
 - **Commands are thin; logic lives in references.** Commands in `commands/` should stay minimal — they delegate to skills and references. Put detailed guidance, policies, and assessment criteria in `skills/spec_development/references/`.
 - **Keep instructions self-contained within their scope.** Each reference file should be understandable on its own when loaded by an agent. Don't rely on implicit context from other files unless an explicit cross-reference is included.
 
+## Codex Deployment Notes
+
+- **Codex consumes deployed artifacts, not repo files directly, for agents.** Changes under `agents/` require `./scripts/deployment.sh` to regenerate the Codex `.toml` files. Reading the source Markdown plus `scripts/README.md` is often necessary to understand what Codex will actually receive after transformation.
+- **Most non-agent Codex artifacts are symlinked.** Changes to `skills/` and most `commands/` source files usually take effect immediately in Codex once deployed; re-run deployment when you add/remove artifacts, change `deployment.conf`, or modify assets that are copied instead of symlinked.
+- **Codex support in this repo is intentionally narrower than Codex itself.** Codex has experimental project and user hook support, but this repo does not wire it up yet. If work touches hooks or the committee-style `auto_spec_check` flow, verify first whether the feature is implemented in this repo's deployment path before editing or relying on it.
+
 ## Deployment
 
 Requires **jq**, **Bash 4+**, and **git**.
@@ -56,7 +62,7 @@ Requires **jq**, **Bash 4+**, and **git**.
 ./scripts/deployment.sh
 
 # Deploy to a specific tool
-./scripts/deployment.sh --target claude-code
+./scripts/deployment.sh --target codex
 
 # Deploy specific artifact type
 ./scripts/deployment.sh --type hooks

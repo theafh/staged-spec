@@ -41,13 +41,15 @@ Not every IDE consumes the same file format. The script adapts automatically:
 | command | symlink or copy to user prompts as `.prompt.md` | symlink to `commands/` | symlink to `commands/` | symlink to `prompts/` | generates `.toml` in `commands/` | generates workflow `.md` in `workflows/` |
 | skill | symlink to `~/.copilot/skills/` | symlink to `skills/` | symlink to `skills/` | symlink to `skills/` | symlink to `skills/` | symlink to `skills/` |
 | agent | rewritten copy to `~/.copilot/agents/*.agent.md` | symlink to `agents/` | copy to `agents/` | generates `.toml` in `agents/` | symlink to `agents/` | not supported |
-| hook | copies files to `~/.copilot/hooks/` | merges JSON into `settings.json`, copies `.sh` scripts | copies `hooks.json` and `.sh` scripts | not supported | not supported | not supported |
+| hook | copies files to `~/.copilot/hooks/` | merges JSON into `settings.json`, copies `.sh` scripts | copies `hooks.json` and `.sh` scripts | not currently deployed by this repo | not supported | not supported |
 
 Cursor agents are copied rather than symlinked because Cursor's file watcher does not follow symlinks.
 
 VS Code agents are written as `.agent.md` files in `~/.copilot/agents/`. The frontmatter rewriter now understands `VSCODE_` vendor-prefixed fields alongside `CURSOR_`, `CLAUDE_`, `CODEX_`, and the other target prefixes. Matching `VSCODE_` fields are stripped to their native VS Code field names during deployment, and vendor-prefixed blocks for other tools are removed.
 
 Hook deployment for Claude Code merges the `hooks` key from the source JSON into `~/.claude/settings.json` using `jq`, and rewrites relative `./hooks/` script paths to absolute paths so they work from any working directory.
+
+Codex itself supports experimental `hooks.json` files at user and project scope, but this deployment script does not currently generate or install Codex hook assets. The Codex target therefore excludes `hooks/*` in `deployment.conf` until the repo adds and tests that deployment path.
 
 When a `replace:` rule matches an asset path, the script stops using symlinks for that deployed asset. It copies the file or directory into the target config directory and then scans the copied content for placeholders in the form `$VARIABLE_NAME$`, replacing each one with the configured value. For skills, the copy and replacement pass runs recursively across the deployed skill directory.
 
@@ -104,6 +106,13 @@ Exclude all hooks from Gemini CLI:
 
 ```text
 #gemini
+disallow:hooks/*
+```
+
+Current repo policy also excludes hooks from Codex until Codex hook deployment is implemented and tested:
+
+```text
+#codex
 disallow:hooks/*
 ```
 
