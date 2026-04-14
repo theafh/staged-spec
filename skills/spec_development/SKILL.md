@@ -14,7 +14,7 @@ description: "StagedSpec: Guides iterative development and assessment of project
     <input>Use a `/specs` folder at the project root for all specification documents.</input>
     <input>Use `specs/architecture.md` as the single index and entry point with stage links, status markers, global constraints, and future features.</input>
     <input>Keep global constraints visible in `specs/architecture.md`, including links to `specs/intent.md`, `specs/security.md`, and `specs/testing.md`.</input>
-    <input>Suggest `specs/security.md` and `specs/testing.md` when they do not exist and prefill them with best practices aligned to the stack and threat model.</input>
+    <input>When `specs/security.md` or `specs/testing.md` are missing, point the user to the spec_init skill for full framework bootstrap.</input>
     <input>The following files are project-level guardrails, not regular stage deliverables:</input>
     <input>`specs/intent.md` — project identity and non-negotiable boundaries.</input>
     <input>`specs/security.md` — security constraints and threat model.</input>
@@ -44,7 +44,7 @@ description: "StagedSpec: Guides iterative development and assessment of project
 
   <output_contract>
     <response_shape>
-      <rule>When initializing a new project or bootstrapping the `/specs` folder, read [references/framework_initialization.md](references/framework_initialization.md).</rule>
+      <rule>When initializing a new project or bootstrapping the `/specs` folder, point the user to the spec_init skill.</rule>
       <rule>When creating, refining, or implementing specs, read [references/single_stage_structure.md](references/single_stage_structure.md).</rule>
       <rule>When reviewing or checking a single stage spec for implementation readiness, read [references/single_stage_assessment.md](references/single_stage_assessment.md).</rule>
       <rule>When assessing the spec framework as a whole for completeness and coherence, read [references/framework_assessment.md](references/framework_assessment.md).</rule>
