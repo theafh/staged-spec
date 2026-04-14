@@ -12,7 +12,7 @@ StagedSpec is a methodology for producing implementation-ready software specific
 
 ## Repository Structure
 
-- **`commands/`** — `assess_all_specs` is the only active command. The remaining `*_legacy.md` files are preserved for backward compatibility with older deployments. Most command functionality has moved to standalone skills.
+- **`commands/.legacy/`** — Archived slash commands kept for backward compatibility only. No commands are actively deployed — all command functionality has moved to standalone skills. The dotfolder convention prevents discovery by the deployment scanner.
 - **`skills/`** — Seven standalone skills (`spec_audit`, `spec_check`, `spec_create_intent`, `spec_feature_update`, `spec_implement`, `spec_validate_intent`, `spec_development`) each with their own `SKILL.md`. `spec_development` is the core skill with a `references/` subdirectory containing detailed guidance for framework initialization, stage structure, stage assessment, framework assessment, and intent documents. The other six are thin skills that delegate to `spec_development` references.
 - **`agents/`** — Autonomous agent configs. Two orchestration agents plus four model-specific reviewers:
   - `auto_spec_check` — orchestrates 3 reviewers in parallel for majority-vote consensus. The reviewer triplet varies by target IDE (configured via `replace:` directives in `deployment.conf`): VS Code uses Codex/Opus/Gemini, Cursor uses Composer/Codex/Gemini.
@@ -20,7 +20,7 @@ StagedSpec is a methodology for producing implementation-ready software specific
   - `check_spec_codex` (GPT-5.4), `check_spec_opus` (Claude Opus 4.6), `check_spec_composer` (Composer 2), `check_spec_gemini` (Gemini 3.1 Pro) — independent reviewer agents used as sub-agents by `auto_spec_check`.
   - See `agents/README.md` for model restrictions, IDE-specific triplets, and VS Code cost-multiplier workarounds.
 - **`hooks/`** — Guardrail enforcement. `protect-guardrails.sh` blocks edits to guardrail docs unless the branch name contains both `guardrail` and `spec`. JSON configs for Claude Code and Cursor.
-- **`scripts/`** — `deployment.sh` adapts and deploys assets to multiple IDEs (symlink for Claude Code/Cursor, copy for Cursor agents, format conversion for Codex/Gemini/Antigravity). `deployment.conf` configures per-tool exclusion rules and placeholder replacements (e.g., reviewer agent triplet selection).
+- **`scripts/`** — `deployment.sh` adapts and deploys assets to multiple IDEs (symlink for Claude Code/Cursor, copy for Cursor agents, format conversion for Codex/Gemini/Antigravity). Supports both global deployment (`~/.claude`, `~/.cursor`, etc.) and per-project deployment via `--project-dir`. `deployment.conf` configures per-tool exclusion rules and placeholder replacements (e.g., reviewer agent triplet selection).
 
 ## Key Concepts (target project behavior, not this repo)
 
@@ -56,11 +56,14 @@ Requires **jq**, **Bash 4+**, and **git**.
 # Preview what would be deployed
 ./scripts/deployment.sh --dry-run
 
-# Deploy all assets to all configured IDEs
+# Deploy all assets to all configured IDEs (global)
 ./scripts/deployment.sh
 
 # Deploy to a specific tool
 ./scripts/deployment.sh --target claude-code
+
+# Deploy into a single project instead of globally
+./scripts/deployment.sh --project-dir /path/to/repo --target claude
 
 # Deploy specific artifact type
 ./scripts/deployment.sh --type hooks
@@ -68,6 +71,6 @@ Requires **jq**, **Bash 4+**, and **git**.
 # Remove all deployed assets
 ./scripts/deployment.sh --uninstall
 
-# Clear old backups
+# Clear old backups (global deployment only)
 ./scripts/deployment.sh --clear-backups
 ```

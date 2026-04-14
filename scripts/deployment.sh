@@ -19,11 +19,12 @@ set -euo pipefail
 # Features:
 #   --type TYPES     Filter by artifact type (rule,command,skill,agent)
 #   --target TARGETS Filter by deploy target (vscode,claude,cursor,codex,gemini,antigravity)
+#   --project-dir D  Deploy into a project directory instead of global config dirs
 #   --dry-run        Preview changes without applying them
 #   --uninstall      Remove previously deployed artifacts from deployed_artefacts.log
 #   --clear-backups  Remove old selected backups before creating new ones
 #   Logs deployed artifacts to deployed_artefacts.log with target/source metadata
-#   Backs up only activated targets
+#   Backs up only activated targets (disabled in project-dir mode)
 #
 # Usage:
 #   ./deployment.sh                              # autodiscover all
@@ -31,6 +32,7 @@ set -euo pipefail
 #   ./deployment.sh --uninstall                  # uninstall logged artifacts only
 #   ./deployment.sh --type skills,commands       # deploy only skills+commands
 #   ./deployment.sh --target vscode,claude       # deploy only to vscode+claude
+#   ./deployment.sh --project-dir /path/to/repo  # deploy into a single project
 #   ./deployment.sh --dry-run                    # preview mode
 # ---------------------------------------------------------------------------
 
@@ -42,6 +44,7 @@ UNINSTALL=false
 CLEAR_BACKUPS=false
 TYPE_FILTER=""
 TARGET_FILTER=""
+PROJECT_DIR=""
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -68,17 +71,23 @@ while [[ $# -gt 0 ]]; do
       TARGET_FILTER="$2"
       shift 2
       ;;
+    --project-dir)
+      PROJECT_DIR="$2"
+      shift 2
+      ;;
     -h|--help)
       cat <<'USAGE'
 Usage: deployment.sh [OPTIONS]
 
 Options:
-  --type TYPES     Comma-separated artifact types to deploy: command,skill,agent
-  --target TARGETS Comma-separated deploy targets: vscode,claude,cursor,codex,gemini,antigravity
-  --uninstall      Uninstall mode; remove matching logged deployed artifacts after backup
-  --clear-backups  Remove old backups for selected targets before creating new backups
-  --dry-run        Preview changes without applying them
-  -h, --help       Show this help message
+  --type TYPES      Comma-separated artifact types to deploy: command,skill,agent
+  --target TARGETS  Comma-separated deploy targets: vscode,claude,cursor,codex,gemini,antigravity
+  --project-dir DIR Deploy into a project directory instead of global config dirs.
+                    Backups are disabled in this mode.
+  --uninstall       Uninstall mode; remove matching logged deployed artifacts after backup
+  --clear-backups   Remove old backups for selected targets before creating new backups
+  --dry-run         Preview changes without applying them
+  -h, --help        Show this help message
 USAGE
       exit 0
       ;;
@@ -92,6 +101,20 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 HOME_DIR="${HOME}"
+
+# ---------------------------------------------------------------------------
+# Project-dir mode — validate and resolve
+# ---------------------------------------------------------------------------
+if [[ -n "$PROJECT_DIR" ]]; then
+  PROJECT_DIR="$(cd "$PROJECT_DIR" 2>/dev/null && pwd)" || {
+    echo "Error: --project-dir path does not exist: $PROJECT_DIR" >&2
+    exit 1
+  }
+  if [[ "$CLEAR_BACKUPS" == true ]]; then
+    echo "  Note: --clear-backups has no effect in project-dir mode (backups are disabled)" >&2
+    CLEAR_BACKUPS=false
+  fi
+fi
 
 # jq is required for JSON-merge hook deployment (Claude Code settings.json)
 if ! command -v jq &>/dev/null; then
@@ -111,20 +134,35 @@ declare -A ASSET_FOLDERS=(
 
 # ---------------------------------------------------------------------------
 # Target directories
+# When --project-dir is set, targets point inside the project directory
+# using each IDE's native project-level config path convention.
 # ---------------------------------------------------------------------------
-CURSOR_DIR="${HOME_DIR}/.cursor"
-CLAUDE_DIR="${HOME_DIR}/.claude"
-CODEX_DIR="${HOME_DIR}/.codex"
-GEMINI_DIR="${HOME_DIR}/.gemini"
-ANTIGRAVITY_DIR="${HOME_DIR}/.gemini/antigravity"
-VSCODE_COPILOT_DIR="${HOME_DIR}/.copilot"
-
-if [[ "$OSTYPE" == darwin* ]]; then
-  VSCODE_PROMPTS_DIR="${HOME_DIR}/Library/Application Support/Code/User/prompts"
-elif [[ "$OSTYPE" == linux* ]]; then
-  VSCODE_PROMPTS_DIR="${HOME_DIR}/.config/Code/User/prompts"
+if [[ -n "$PROJECT_DIR" ]]; then
+  CLAUDE_DIR="${PROJECT_DIR}/.claude"
+  CURSOR_DIR="${PROJECT_DIR}/.cursor"
+  CODEX_DIR="${PROJECT_DIR}/.codex"
+  CODEX_SKILLS_DIR="${PROJECT_DIR}/.agents/skills"
+  VSCODE_COPILOT_DIR="${PROJECT_DIR}/.github"
+  VSCODE_PROMPTS_DIR="${PROJECT_DIR}/.github/prompts"
+  # Gemini and Antigravity have no documented project-level config convention.
+  # Set to empty so the filter logic can skip them with a warning.
+  GEMINI_DIR=""
+  ANTIGRAVITY_DIR=""
 else
-  VSCODE_PROMPTS_DIR="${HOME_DIR}/.config/Code/User/prompts"
+  CLAUDE_DIR="${HOME_DIR}/.claude"
+  CURSOR_DIR="${HOME_DIR}/.cursor"
+  CODEX_DIR="${HOME_DIR}/.codex"
+  CODEX_SKILLS_DIR=""
+  VSCODE_COPILOT_DIR="${HOME_DIR}/.copilot"
+  GEMINI_DIR="${HOME_DIR}/.gemini"
+  ANTIGRAVITY_DIR="${HOME_DIR}/.gemini/antigravity"
+  if [[ "$OSTYPE" == darwin* ]]; then
+    VSCODE_PROMPTS_DIR="${HOME_DIR}/Library/Application Support/Code/User/prompts"
+  elif [[ "$OSTYPE" == linux* ]]; then
+    VSCODE_PROMPTS_DIR="${HOME_DIR}/.config/Code/User/prompts"
+  else
+    VSCODE_PROMPTS_DIR="${HOME_DIR}/.config/Code/User/prompts"
+  fi
 fi
 
 # Instruction files that need rule references
@@ -400,13 +438,20 @@ ALL_APP_TARGETS=(
   "antigravity|Antigravity|${ANTIGRAVITY_DIR}"
 )
 
-# Build filtered target list
+# Build filtered target list. In project-dir mode, skip Gemini and
+# Antigravity (no documented project-level config convention) and warn
+# if the user explicitly requested them.
 APP_TARGETS=()
 for target in "${ALL_APP_TARGETS[@]}"; do
-  IFS='|' read -r app_id _label _dir <<< "$target"
-  if matches_filter "$app_id" "$TARGET_FILTER"; then
-    APP_TARGETS+=("$target")
+  IFS='|' read -r app_id app_label _dir <<< "$target"
+  matches_filter "$app_id" "$TARGET_FILTER" || continue
+
+  if [[ -n "$PROJECT_DIR" && -z "$_dir" ]]; then
+    warn "skip" "${app_label} has no project-level config convention — skipped in project-dir mode (needs research)"
+    continue
   fi
+
+  APP_TARGETS+=("$target")
 done
 
 if [[ ${#APP_TARGETS[@]} -eq 0 ]]; then
@@ -1060,7 +1105,13 @@ install_for_app() {
       esac
       ;;
     skill)
-      local dest_dir="${app_dir}/skills"
+      # Codex project-level skills go to .agents/skills/ not .codex/skills/
+      local dest_dir
+      if [[ "$app_id" == "codex" && -n "$CODEX_SKILLS_DIR" ]]; then
+        dest_dir="$CODEX_SKILLS_DIR"
+      else
+        dest_dir="${app_dir}/skills"
+      fi
       ensure_dir "$dest_dir"
       local dest_path="${dest_dir}/${name}"
       if [[ ${#replacement_specs[@]} -gt 0 ]]; then
@@ -1141,8 +1192,16 @@ install_for_app() {
           if [[ "$src_ext" == "json" ]]; then
             # Only deploy the Claude Code-specific config; skip other JSON configs
             [[ "$source_abs" == *claude-code-hooks* ]] || { info "skip" "[$name] not a Claude hook config"; return 0; }
-            # Merge the hooks key into ~/.claude/settings.json with absolute script paths
-            merge_json_key "$source_abs" "${app_dir}/settings.json" "hooks" "$app_id" "$type" "${app_dir}/hooks"
+            # Merge the hooks key into settings.json. Global deployment uses absolute
+            # script paths; project-dir uses paths relative to the project root so
+            # the repo stays portable across machines.
+            local hooks_dir
+            if [[ -n "$PROJECT_DIR" ]]; then
+              hooks_dir=".claude/hooks"
+            else
+              hooks_dir="${app_dir}/hooks"
+            fi
+            merge_json_key "$source_abs" "${app_dir}/settings.json" "hooks" "$app_id" "$type" "$hooks_dir"
           elif [[ "$src_ext" == "sh" ]]; then
             local dest_dir="${app_dir}/hooks"
             ensure_dir "$dest_dir"
@@ -1369,7 +1428,11 @@ uninstall_logged_artifacts() {
 # ---------------------------------------------------------------------------
 echo ""
 echo "Repo root:     $REPO_ROOT"
-echo "Home:          $HOME_DIR"
+if [[ -n "$PROJECT_DIR" ]]; then
+  echo "Project dir:   $PROJECT_DIR"
+else
+  echo "Home:          $HOME_DIR"
+fi
 $DRY_RUN && echo "Mode:          DRY RUN (simulated only, no changes written)"
 $UNINSTALL && echo "Uninstall:     enabled"
 $CLEAR_BACKUPS && echo "Clear backups: enabled"
@@ -1382,34 +1445,39 @@ echo ""
 parse_deployment_conf
 
 # ---------------------------------------------------------------------------
-# Backup activated targets only
+# Backup activated targets only (disabled in project-dir mode)
 # ---------------------------------------------------------------------------
-echo "Backing up activated target directories..."
-echo ""
+if [[ -n "$PROJECT_DIR" ]]; then
+  info "skip" "Backups are disabled in project-dir mode"
+  echo ""
+else
+  echo "Backing up activated target directories..."
+  echo ""
 
-declare -A backed_up=()
-for target in "${APP_TARGETS[@]}"; do
-  IFS='|' read -r app_id _label base_dir <<< "$target"
-  backup_roots=("$base_dir")
-  if [[ "$app_id" == "antigravity" ]]; then
-    backup_roots=("${GEMINI_DIR}")
-  elif [[ "$app_id" == "vscode" ]]; then
-    backup_roots=("${VSCODE_COPILOT_DIR}" "${VSCODE_PROMPTS_DIR}")
-  fi
-
-  local_backup_root=""
-  for local_backup_root in "${backup_roots[@]}"; do
-    if [[ -z "${backed_up[$local_backup_root]+x}" ]]; then
-      if $CLEAR_BACKUPS; then
-        clear_old_backups_for_app_dir "$local_backup_root"
-      fi
-      backup_app_dir "$local_backup_root"
-      backed_up["$local_backup_root"]=1
+  declare -A backed_up=()
+  for target in "${APP_TARGETS[@]}"; do
+    IFS='|' read -r app_id _label base_dir <<< "$target"
+    backup_roots=("$base_dir")
+    if [[ "$app_id" == "antigravity" ]]; then
+      backup_roots=("${GEMINI_DIR}")
+    elif [[ "$app_id" == "vscode" ]]; then
+      backup_roots=("${VSCODE_COPILOT_DIR}" "${VSCODE_PROMPTS_DIR}")
     fi
-  done
-done
 
-echo ""
+    local_backup_root=""
+    for local_backup_root in "${backup_roots[@]}"; do
+      if [[ -z "${backed_up[$local_backup_root]+x}" ]]; then
+        if $CLEAR_BACKUPS; then
+          clear_old_backups_for_app_dir "$local_backup_root"
+        fi
+        backup_app_dir "$local_backup_root"
+        backed_up["$local_backup_root"]=1
+      fi
+    done
+  done
+
+  echo ""
+fi
 
 if $UNINSTALL; then
   uninstall_logged_artifacts

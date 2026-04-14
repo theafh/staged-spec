@@ -23,7 +23,7 @@ The core cycle: human describes intent, AI drafts a stage spec, AI assesses it f
 ```text
 staged-spec/
   skills/         # Skill definitions — primary workflow entry points
-  commands/       # Legacy slash commands (kept for backward compatibility)
+  commands/.legacy/ # Legacy slash commands (kept for backward compatibility, not deployed)
   agents/         # Autonomous agent configs (committee reviewers, orchestrator)
   hooks/          # Guardrail enforcement hook assets; currently deployed for Claude Code and Cursor
   scripts/        # Deployment script and per-tool target config
@@ -62,11 +62,11 @@ Skills are the primary workflow entry points. Each skill is a self-contained def
 
 ### Legacy slash commands
 
-The original slash commands (`commands/`) are retained as `*_legacy.md` files for backward compatibility. Slash-command support varies across IDE vendors and is declining, so new workflows should use skills instead. Legacy commands are excluded from deployment via `deployment.conf` rules.
+The original slash commands are archived in `commands/.legacy/` for backward compatibility only. They are not deployed — the dotfolder convention makes them invisible to the deployment scanner, and the `disallow:*legacy*` rule in `deployment.conf` acts as an additional safety net. New workflows should use skills instead.
 
 ## Deployment
 
-StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool configuration file (`scripts/deployment.conf`) controls which assets ship to each tool. The current rules exclude unsupported or not-yet-wired features per tool and block all legacy command files from deployment across every target. For example, Codex hook support exists in Codex itself but is not yet deployed by this repo.
+StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool configuration file (`scripts/deployment.conf`) controls which assets ship to each tool. Deployment can target global config directories (the default) or a single project directory via `--project-dir`, keeping skills, agents, and hooks scoped to repos that actually use staged specs. The current rules exclude unsupported or not-yet-wired features per tool and block all legacy command files from deployment across every target. For example, Codex hook support exists in Codex itself but is not yet deployed by this repo.
 
 ## Guardrail Enforcement
 

@@ -1,6 +1,6 @@
 # Deployment
 
-`deployment.sh` deploys StagedSpec assets (commands, skills, agents, hooks) from this repo into the global config directories of supported agentic IDEs. It uses symlinks where possible so edits to source files take effect immediately, and falls back to copying or format conversion when a target requires it. `deployment.conf` can also force a copied deployment for selected paths and replace placeholders in the deployed copy.
+`deployment.sh` deploys StagedSpec assets (commands, skills, agents, hooks) from this repo into the config directories of supported agentic IDEs. By default it targets global config directories (`~/.claude`, `~/.cursor`, etc.), but `--project-dir` redirects deployment into a single project directory instead. It uses symlinks where possible so edits to source files take effect immediately, and falls back to copying or format conversion when a target requires it. `deployment.conf` can also force a copied deployment for selected paths and replace placeholders in the deployed copy.
 
 ## Supported Targets
 
@@ -47,7 +47,7 @@ Cursor agents are copied rather than symlinked because Cursor's file watcher doe
 
 VS Code agents are written as `.agent.md` files in `~/.copilot/agents/`. The frontmatter rewriter now understands `VSCODE_` vendor-prefixed fields alongside `CURSOR_`, `CLAUDE_`, `CODEX_`, and the other target prefixes. Matching `VSCODE_` fields are stripped to their native VS Code field names during deployment, and vendor-prefixed blocks for other tools are removed.
 
-Hook deployment for Claude Code merges the `hooks` key from the source JSON into `~/.claude/settings.json` using `jq`, and rewrites relative `./hooks/` script paths to absolute paths so they work from any working directory.
+Hook deployment for Claude Code merges the `hooks` key from the source JSON into `settings.json` using `jq`, and rewrites relative `./hooks/` script paths. In global mode, paths are rewritten to absolute paths (e.g., `~/.claude/hooks/protect-guardrails.sh`). In `--project-dir` mode, paths are rewritten to project-root-relative paths (e.g., `.claude/hooks/protect-guardrails.sh`) so the repo stays portable.
 
 Codex itself supports experimental `hooks.json` files at user and project scope, but this deployment script does not currently generate or install Codex hook assets. The Codex target therefore excludes `hooks/*` in `deployment.conf` until the repo adds and tests that deployment path.
 
@@ -55,7 +55,7 @@ When a `replace:` rule matches an asset path, the script stops using symlinks fo
 
 ### Backups
 
-Every run backs up the config directories of activated targets before making changes. Backups are timestamped copies placed next to the original directory:
+Every global deployment run backs up the config directories of activated targets before making changes. Backups are timestamped copies placed next to the original directory:
 
 ```text
 ~/.claude          ->  ~/.claude_20260330_141500
@@ -63,6 +63,8 @@ Every run backs up the config directories of activated targets before making cha
 ```
 
 Use `--clear-backups` to remove old backups before creating new ones.
+
+Backups are disabled in `--project-dir` mode because project files are expected to be under version control. If `--clear-backups` is passed together with `--project-dir`, the script prints a notice and ignores the flag.
 
 ### Artifact log
 
@@ -134,7 +136,7 @@ Allow everything for Cursor (empty section or omit the section entirely):
 Run the script from anywhere; it resolves paths relative to the repo root automatically.
 
 ```bash
-# Deploy all artifacts to all targets
+# Deploy all artifacts to all targets (global)
 ./scripts/deployment.sh
 
 # Preview what would happen without writing anything
@@ -148,6 +150,9 @@ Run the script from anywhere; it resolves paths relative to the repo root automa
 
 # Combine filters
 ./scripts/deployment.sh --type commands --target gemini --dry-run
+
+# Deploy into a single project directory instead of global config
+./scripts/deployment.sh --project-dir /path/to/repo --target claude
 
 # Remove old backups before creating fresh ones
 ./scripts/deployment.sh --clear-backups
@@ -168,9 +173,10 @@ Run the script from anywhere; it resolves paths relative to the repo root automa
 | :--- | :--- |
 | `--type TYPES` | Comma-separated artifact types to deploy: `command`, `skill`, `agent`, `hook` |
 | `--target TARGETS` | Comma-separated targets: `vscode`, `claude`, `cursor`, `codex`, `gemini`, `antigravity` |
+| `--project-dir DIR` | Deploy into a project directory instead of global config dirs. Backups are disabled in this mode. |
 | `--dry-run` | Preview all actions without writing to disk |
 | `--uninstall` | Remove previously deployed artifacts using the artifact log |
-| `--clear-backups` | Remove old timestamped backups before creating new ones |
+| `--clear-backups` | Remove old timestamped backups before creating new ones (ignored in project-dir mode) |
 | `-h`, `--help` | Print usage summary |
 
 ## Common Workflows
@@ -197,6 +203,33 @@ Since most artifacts are symlinked, changes to source files in `commands/`, `ski
 ```bash
 ./scripts/deployment.sh
 ```
+
+### Per-project deployment
+
+Use `--project-dir` to deploy assets into a single project instead of globally. This keeps skills, agents, and hooks scoped to repos that actually use staged specs, avoiding latency and clutter in unrelated projects.
+
+```bash
+# Deploy Claude Code and Cursor assets into a specific repo
+./scripts/deployment.sh --project-dir /path/to/repo --target claude,cursor
+
+# Preview per-project deployment for all supported targets
+./scripts/deployment.sh --project-dir /path/to/repo --dry-run
+```
+
+In project-dir mode the script uses each IDE's native project-level config path convention instead of the global home-directory paths:
+
+| Target | Global path | Project path |
+| :--- | :--- | :--- |
+| Claude Code | `~/.claude/` | `<project>/.claude/` |
+| Cursor | `~/.cursor/` | `<project>/.cursor/` |
+| Codex | `~/.codex/` (skills: `~/.codex/skills/`) | `<project>/.codex/` (skills: `<project>/.agents/skills/`) |
+| VS Code | `~/.copilot/`, user prompts dir | `<project>/.github/` (agents, skills, hooks, prompts) |
+| Gemini CLI | skipped | No documented project-level convention — needs research and testing |
+| Antigravity | skipped | No documented project-level convention — needs research and testing |
+
+Backups are disabled because project files are expected to be version-controlled. Symlinked assets still point back to this repo, so source edits take effect immediately; re-run the script only when adding or removing artifacts.
+
+**Hooks in project-dir mode.** Claude Code hooks are written to `<project>/.claude/settings.json` with relative script paths (e.g., `.claude/hooks/protect-guardrails.sh`) so the repo stays portable across machines. In global mode, absolute paths are used instead. Cursor hooks use `./hooks/` paths relative to the `.cursor/` directory, which works in both modes without changes.
 
 ### Uninstalling
 
