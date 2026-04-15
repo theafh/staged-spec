@@ -9,7 +9,7 @@
   <policy>
     <intent>
       <rule>Evaluate each dimension and report its state.</rule>
-      <rule>Treat stage files marked implemented as historical records during framework assessment: include them in cross-file consistency checks (status markers, dependency chain integrity, terminology consistency, and link validity), and assess stage-level quality/readiness only for stages that are not marked implemented.</rule>
+      <rule>Treat `specs/features.md` as the authoritative source for all implemented behavior. Use implemented stage files only for cross-file consistency checks (status markers, link validity, terminology) — not as behavioral context. Assess stage-level quality and readiness only for stages with status `planned`.</rule>
     </intent>
 
     <assessment_dimensions>
@@ -41,7 +41,7 @@
       <scope_distribution>
         <criterion>Each requirement lives in exactly one stage — no duplicated ownership across files.</criterion>
         <criterion>Requirements that span stages have clear ownership in one file with explicit cross-references where needed.</criterion>
-        <criterion>The boundary between consecutive stages is unambiguous: given a requirement, it is obvious which stage owns it.</criterion>
+        <criterion>The boundary between consecutive planned stages is unambiguous: given a requirement, it is obvious which stage owns it.</criterion>
         <criterion>Out-of-scope sections in stage files align with what later stages actually cover.</criterion>
         <criterion>Deferred items in `architecture.md` future-features list are consistent with out-of-scope entries in stage files.</criterion>
         <criterion>Each stage is sized as the most compact scope that delivers a meaningful, testable capability — large enough to drive coherent progress, small enough for one-shot AI implementation in a single pass.</criterion>
@@ -56,17 +56,18 @@
       </version_tier_progression>
 
       <feature_documentation_alignment>
-        <criterion>`specs/features.md` exists when the project has implemented behavior.</criterion>
+        <criterion>`specs/features.md` exists when the project has implemented behavior and serves as the authoritative record of current system capabilities.</criterion>
         <criterion>Every behavior documented in `features.md` is actually implemented in the codebase.</criterion>
-        <criterion>`features.md` contains no planned or hallucinated behavior — only verified runtime outcomes.</criterion>
-        <criterion>`features.md` is organized by feature topics, not by stages — it describes what the system does, not which stage delivered it.</criterion>
+        <criterion>`features.md` contains only verified runtime outcomes — no planned behavior, no stage history.</criterion>
+        <criterion>`features.md` is organized by feature topics — it describes what the system does, not which stage delivered it.</criterion>
         <criterion>`features.md` uses behavior-first form (runtime outcomes, not internals).</criterion>
+        <criterion>Planned stages reference `features.md` for established behavior they build on, rather than referencing implemented stage files.</criterion>
       </feature_documentation_alignment>
 
       <terminology_and_cross_file_consistency>
         <criterion>Key terms (component names, concepts, flag names, API surfaces) use the same wording across all spec files.</criterion>
         <criterion>Cross-references between files use valid relative markdown links; section anchors are present when they add precision.</criterion>
-        <criterion>Config contracts (flags, environment variables) defined in one stage are referenced consistently when reused or extended in later stages.</criterion>
+        <criterion>Config contracts (flags, environment variables) documented in `features.md` or defined in planned stages are referenced consistently when reused or extended in later stages.</criterion>
       </terminology_and_cross_file_consistency>
     </assessment_dimensions>
   </policy>

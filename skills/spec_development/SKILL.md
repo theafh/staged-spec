@@ -24,6 +24,12 @@ description: "StagedSpec: Guides iterative development and assessment of project
   <policy>
     <intent>
       <rule>Treat the full `/specs` set as one system: improve clarity and consistency without eroding already-established valid behavior.</rule>
+      <context_hierarchy>
+        <rule>Use `specs/features.md` as the authoritative source for all implemented behavior — it defines what the system does today.</rule>
+        <rule>Use planned stage files for upcoming work and its dependencies. Stages are relevant while planned; once implemented, their behavioral content lives in `features.md`.</rule>
+        <rule>Treat implemented stage files as historical records for audit and link validation only — source behavioral context from `features.md`.</rule>
+        <rule>Frame stage content in terms of what the system does today (`features.md`) and what this stage will add — orient toward the present and the future.</rule>
+      </context_hierarchy>
       <rule>Keep specs contradiction-free and outcome-focused; include implementation detail only when required for correctness, safety, or integration.</rule>
       <rule>Add an explicit out-of-scope section in `specs/architecture.md` to prevent scope creep.</rule>
       <rule>Plan staged work to reduce avoidable refactors by keeping scope cohesive, dependencies explicit, and build order free of forward dependencies.</rule>

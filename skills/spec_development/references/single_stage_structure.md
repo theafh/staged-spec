@@ -31,7 +31,7 @@
       <item>Title line with the stage name</item>
       <item>`**Status**:` Planned | In Progress | ✓ Implemented</item>
       <item>`**Goal**:` one-sentence outcome</item>
-      <item>**Dependencies and prior links**: required prior stage/spec links when this stage extends or builds on them. Link each referenced stage with a valid relative markdown link (e.g., `[Stage 1 — Init](v1-stage-1-init.md)`).</item>
+      <item>**Dependencies**: link to `specs/features.md` for established behavior this stage builds on, and to earlier planned stage files for capabilities this stage requires that are not yet implemented. Use valid relative markdown links (e.g., `[Features — Auth](../features.md#authentication)`, `[Stage 3 — Auth](v1-stage-3-auth.md)`).</item>
       <item>Optional **Read first** for prerequisite docs when relevant (for example `specs/security.md`, `specs/testing.md`)</item>
       <item>**Desired behavior (specification)**</item>
       <item>**Scope boundary**</item>
@@ -71,16 +71,20 @@
 
       <reference_discipline>
         <rule>Link referenced spec files with valid relative markdown links; include a section anchor when it adds precision or clarity.</rule>
-        <rule>When a stage extends or depends on prior work, place one canonical dependency reference within the content. Treat this as a reference to prior/current dependencies, not future-stage ownership.</rule>
-        <rule>If the same prior spec is referenced multiple times across sections, treat that as a consolidation signal: combine into one clearer paragraph/section with one reference per target spec where possible.</rule>
+        <context_hierarchy>
+          <rule>Use `specs/features.md` as the authoritative source for all implemented behavior. Reference feature topics and section anchors — describe what the system does today, sourced from features.md.</rule>
+          <rule>Link to planned stage files only when this stage depends on capabilities those planned stages will introduce. These are real prerequisites for future work, not historical records.</rule>
+          <rule>Treat implemented stage files as historical records for audit and link validation only — source behavioral context from `specs/features.md`.</rule>
+        </context_hierarchy>
+        <rule>Place one canonical dependency reference per prerequisite within the content. Consolidate repeated references to the same spec into one clear paragraph with one link per target.</rule>
         <rule>When consolidating repeated references, preserve required constraints and context; improve clarity without skipping requirements, introducing scope creep, or over-compressing intent.</rule>
       </reference_discipline>
 
       <scope_boundary_discipline>
-        <rule>Keep stage spec content implementation-focused: describe only behavior implemented in the current stage.</rule>
-        <rule>Place all forward-looking references exclusively in the **Out of scope** section. Behavior, requirements, or links that reference stages after the current one belong only there — their presence in any other section means the spec is not implementation-ready.</rule>
-        <rule>Reference prior specs sparingly and only when the reference reduces ambiguity needed for implementation-ready clarity.</rule>
-        <rule>Link every mentioned stage with a valid relative markdown link (e.g., `[Stage 3 — Auth](v1-stage-3-auth.md)`). Convert bare stage names without links to proper links.</rule>
+        <rule>Keep stage spec content implementation-focused: describe what this stage will implement and how, grounded in the system's current behavior as documented in `specs/features.md`.</rule>
+        <rule>Place all forward-looking references exclusively in the **Out of scope** section. Verify that implementation sections reference only established behavior (`features.md`) and direct planned prerequisites — move any later-stage references to Out of scope.</rule>
+        <rule>Reference `specs/features.md` for established behavior. Reference planned stage files only when they are direct prerequisites for the current stage's implementation.</rule>
+        <rule>Link every mentioned stage or spec with a valid relative markdown link (e.g., `[Features — Auth](../features.md#authentication)`, `[Stage 3 — Auth](v1-stage-3-auth.md)`). Convert bare names to proper links.</rule>
       </scope_boundary_discipline>
 
       <relocating_to_out_of_scope>
@@ -98,7 +102,7 @@
       <rule>When moving content between specs, relocate it to the correct file and keep the full spec set complete; always preserve required behavior.</rule>
       <rule>Reassess dependency quality during refinement:</rule>
       <dependency_quality_checks>
-        <item>validate prerequisites for every stage N against stages `1..N-1`,</item>
+        <item>validate prerequisites against `specs/features.md` (implemented behavior) and earlier planned stages (unbuilt prerequisites),</item>
         <item>evaluate intent as well as wording,</item>
         <item>reorder or split when forward dependencies or cycles appear.</item>
       </dependency_quality_checks>
@@ -124,7 +128,7 @@
       <definition_of_done>
         <item>claimed behavior is verified in the actual codebase (and tests/verifications where applicable), not inferred from plans/drafts,</item>
         <item>tests/verifications are listed and reflect observable behavior,</item>
-        <item>implemented behavior is documented in `specs/features.md` in behavior-first form,</item>
+        <item>implemented behavior is documented in `specs/features.md` in behavior-first form — `features.md` becomes the authoritative record of this behavior from this point forward,</item>
         <item>status is synchronized across `specs/architecture.md` and the corresponding `v*-stage-*.md` file.</item>
       </definition_of_done>
       <rule>Run a mandatory cross-file consistency check before finishing any spec/status update:</rule>

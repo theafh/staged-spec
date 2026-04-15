@@ -26,7 +26,7 @@ The target consumer of every spec is a **one-shot AI coding agent** that receive
 
 Read the spec file and the spec_development Skill thoroughly. Understand the spec's goal, structure, and stage before delegating to reviewers.
 
-Read the project's existing spec artifacts for context: `specs/architecture.md`, `specs/features.md`, `specs/testing.md`, `specs/security.md` (when they exist), and any already-implemented stage specs. When the spec references or builds on existing project code, inspect the relevant parts of the codebase. Use this context to ground every subsequent filtering, synthesis, and editing decision in what the project already establishes — its conventions, constraints, terminology, and implemented behavior.
+Read the project's spec artifacts for context: `specs/architecture.md`, `specs/features.md`, `specs/testing.md`, `specs/security.md` (when they exist), and any planned stage specs that the current spec depends on. Use `specs/features.md` as the authoritative source for what the system currently does — implemented stage files are historical records, not behavioral context. When the spec references or builds on existing project code, inspect the relevant parts of the codebase. Ground every subsequent filtering, synthesis, and editing decision in the system's current behavior (from `features.md`), its constraints (from guardrails), and its planned trajectory (from planned stages).
 
 ### Step 2 — Delegate
 
@@ -75,13 +75,13 @@ Use these examples to calibrate:
 - **Keep**: "Section A requires idempotent writes, but section B defines an append-only log for the same operation" — behavioral contradiction that produces wrong results
 - **Keep**: "The spec omits error handling for the external API call, leaving the agent to guess between retry, fail-fast, or silent fallback" — ambiguity that causes divergent implementations
 - **Keep**: "Rate limiting is specified here but v2-api-gateway.md already owns that concern" — scope overlap with an existing future spec that should be resolved before implementation
-- **Keep**: "The spec re-defines the auth token format without referencing v1-stage-2 where it was established" — missing dependency link to an earlier stage that already covers the requirement
+- **Keep**: "The spec re-defines the auth token format already established in features.md — reference the existing behavior instead of re-specifying it" — missing dependency link to `features.md` for established behavior
 - **Skip**: "Rename the 'process' function to 'handle' for consistency with other stages" — style preference with no implementation impact
 - **Skip**: "Specify the exact cache eviction algorithm" — over-specifies where the spec intentionally leaves room for implementation choice
 
 ### Step 5 — Check stage appropriateness and intent alignment
 
-**Core rule: anything not implemented in the current stage is out of scope.** A spec is implementation-ready only when it can be fully implemented and tested without relying on anything from later stages. Behavior, requirements, or dependencies that belong to later stages must not appear in the spec's implementation sections. Any reference or link to a later stage inside implementation sections is a direct violation — it means the spec still depends on work that does not exist yet.
+**Core rule: the spec describes exactly what this stage will implement, grounded in the system's current behavior from `specs/features.md`.** A spec is implementation-ready when it can be fully implemented and tested using only established behavior (documented in `features.md`) and capabilities from earlier planned stages that are direct prerequisites. Place all references to later stages exclusively in the **Out of scope** section — their presence in implementation sections signals the spec depends on work that does not exist yet.
 
 **Intent alignment rule: no spec may violate the bounds set by `specs/intent.md`.** If the intent document exists, use the spec_development Skill's spec_intent reference (read in Step 1) to check every surviving finding — and every existing aspect in the spec — against its declared boundaries.
 
@@ -149,7 +149,7 @@ This check applies equally to aspects that were already in the spec before this 
 
 Use the spec_development Skill (read in Step 1) as your guide for spec structure and quality standards. Follow its required section structure, paragraph discipline, reference discipline, and scope boundary rules when making any edits.
 
-Do not stop at reporting surviving improvements. Apply them directly to the spec file with targeted edits. Preserve the spec's existing voice, structure, and intent. Edit only sections affected by the consensus findings, stage-appropriateness relocations, and intent-alignment corrections from Step 5. When resolving gaps, use the project context gathered in Step 1 (existing specs, features.md, codebase) to provide concrete fixes aligned with the project rather than leaving resolutions open-ended.
+Apply surviving improvements directly to the spec file with targeted edits. Preserve the spec's existing voice, structure, and intent. Edit only sections affected by the consensus findings, stage-appropriateness relocations, and intent-alignment corrections from Step 5. When resolving gaps, use `specs/features.md` (current system behavior), guardrail documents (constraints), and the codebase to provide concrete fixes aligned with the project. Frame all behavioral context in terms of what the system currently does (from `features.md`) and what this stage will add — orient toward present capabilities and planned outcomes.
 
 When creating or modifying Out of scope entries for relocated aspects, keep each entry to one short boundary note with one concise reference to the target stage file.
 
