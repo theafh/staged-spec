@@ -55,10 +55,11 @@ Skills are the primary workflow entry points. Each skill is a self-contained def
 | `spec_audit` | Audits an implementation against its spec, reporting gaps between specified and built |
 | `spec_implement` | Implements a spec in a single pass, verifying all details and running tests |
 | `spec_feature_update` | Updates `features.md` to reflect actual implemented behavior |
-| `spec_create_intent` | Analyzes all `/specs` documents and produces the Project Intent Summary (`intent.md`) |
+| `spec_init` | Bootstraps the `/specs` framework in a new project — creates guardrail documents, architecture index, and optional initial stages |
+| `spec_derive_intent` | Derives `intent.md` from an existing `/specs` folder that has stages but is missing the intent document |
 | `spec_validate_intent` | Validates specs, code, or both against `intent.md` and reports violations by severity |
 
-`spec_create_intent` and `spec_validate_intent` form a project-wide guardrail layer. Individual stage specs ensure each piece is internally sound. The intent document ensures the pieces stay true to the project's identity.
+`spec_init` handles greenfield bootstrap. `spec_derive_intent` and `spec_validate_intent` form a write/read pair for projects that already have specs — derive the intent, then validate against it. The intent document ensures all pieces stay true to the project's identity.
 
 ### Legacy slash commands
 

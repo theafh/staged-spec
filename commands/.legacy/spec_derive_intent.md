@@ -1,4 +1,4 @@
-# spec_create_intent
+# spec_derive_intent
 
 Analyze all documents in the `/specs` folder and produce the Project Intent Summary.
 

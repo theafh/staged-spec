@@ -8,6 +8,7 @@ set -euo pipefail
 #
 # Discovery is folder-based: assets live in top-level folders whose name
 # determines the artifact type (agents/, commands/, skills/, hooks/).
+# Hidden files and README files are always excluded from discovery.
 #
 # Per-tool deployment configuration is loaded from deployment.conf
 # (robots.txt-style). Current directives:
@@ -509,8 +510,9 @@ discover_artifacts() {
         [[ -f "$f" ]] || continue
         local bname
         bname="$(basename "$f")"
-        # Skip hidden files
+        # Skip hidden files and README files
         [[ "$bname" == .* ]] && continue
+        [[ "${bname^^}" == README* ]] && continue
         local name_no_ext="${bname%.*}"
         local rel_path="${folder}/${bname}"
         discovered+=("${name_no_ext}|${art_type}|${rel_path}")
