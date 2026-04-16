@@ -28,7 +28,7 @@ The sections below describe what the tooling produces when deployed into a targe
 
 **Five guardrail documents** live in each target project's `/specs` directory: `architecture.md` (index + status), `intent.md` (project identity + boundaries), `features.md` (behavior record), `security.md`, `testing.md`. The last three are guardrails — protected by hooks from casual modification.
 
-**Stage files** follow strict naming: `v<version>-stage-<number>-<short-name>.md` (ordered) or `v<version>-<short-name>.md` (future). Each stage is self-contained with required sections: Status, Goal, Dependencies, Desired behavior, Scope boundary, Implementation steps, Tests & verification, Documentation updates, Out of scope.
+**Stage files** follow strict naming: `v<version>-stage-<number>-<short-name>.md` (ordered) or `v<version>-<short-name>.md` (future). Each stage is self-contained with required sections: Status, Goal, Dependencies, Desired behavior, Scope boundary, Implementation steps, Tests & verification, Out of scope.
 
 **Assessment output format** is standardized: general assessment paragraph, then severity-ordered issue list (Critical > High > Medium > Minor). Each issue: title + 1 paragraph (problem, impact, minimum fix).
 

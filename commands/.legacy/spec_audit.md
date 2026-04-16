@@ -7,7 +7,7 @@ Audit only specs marked as `✓ Implemented` in `specs/architecture.md`. Skip al
 1. **Read the spec thoroughly** — understand desired behavior, implementation steps, dependencies, scope boundary, and the "Tests and verification" section.
 2. **Understand the existing codebase** — read the implemented code and existing tests to establish what is actually in place.
 3. **Verify feature implementation** — walk through each item in "Desired behavior" and "Implementation steps" and confirm the code covers it.
-4. **Verify tests and verification** — confirm every item in "Tests and verification" has a corresponding, passing test. Missing or incomplete tests count as gaps.
+4. **Verify tests and verification** — confirm every verification topic in "Tests and verification" has a corresponding, passing test. Each top-level item is one verification topic mapping to one test; verify the test exists and covers the behavioral checks listed under the topic. Missing or incomplete tests count as gaps.
 5. **Run all tests** — execute the full test suite. Record any failures or warnings.
 
 ## Output format

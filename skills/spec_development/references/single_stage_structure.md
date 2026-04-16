@@ -36,8 +36,7 @@
       <item>**Desired behavior (specification)**</item>
       <item>**Scope boundary**</item>
       <item>**Implementation steps**</item>
-      <item>**Tests and verification** — verify items are test design inputs, not a 1:1 test count target</item>
-      <item>**Documentation updates**</item>
+      <item>**Tests and verification** — each top-level item is a verification topic grouping related behavioral checks</item>
       <item>**Out of scope** — the only section that may contain forward-looking references to later stages or future versions</item>
     </required_stage_structure>
     <rule>Apply paragraph discipline:</rule>
@@ -58,11 +57,14 @@
 
   <policy>
     <tests_and_verification_design>
-      <rule>Treat verify items as test design inputs: group related items into cohesive test functions (~2–3 verify items per test) rather than writing one test per item.</rule>
-      <rule>Prioritize tests that catch silent correctness bugs — behavioral errors where a wrong implementation appears to work until edge conditions surface. Examples: error classification logic, retry/backoff math, boundary enforcement, validation rules.</rule>
-      <rule>Deprioritize or omit tests that duplicate guarantees already enforced by the language, type system, or framework (e.g., type checks in compiled languages, schema enforcement by an ORM, validation built into a framework). When a verify item is fully covered by such guarantees, note that in the spec rather than requiring a redundant test.</rule>
-      <rule>Include integration tests for cross-stage handoff points — boundaries where the current stage's output feeds into a prior or subsequent stage's input. These are where bugs hide in practice.</rule>
-      <rule>Aim for roughly a 2:1 ratio of verify items to test functions. This is a guideline for thorough-without-ceremonial coverage, not a hard constraint.</rule>
+      <rule>Write each top-level item in "Tests and verification" as a verification topic with a descriptive heading, grouping ~2–3 related behavioral checks under it. The implementer maps each topic to one test function, so topic grouping directly shapes the test structure.</rule>
+      <format_example>
+- **Token refresh** — refresh triggers before expiry, returns a valid token, updates stored credentials
+- **Auth failure handling** — invalid credentials return 401, expired tokens trigger refresh, malformed tokens are rejected
+      </format_example>
+      <rule>Prioritize topics that catch silent correctness bugs — behavioral errors where a wrong implementation appears to work until edge conditions surface. Examples: error classification logic, retry/backoff math, boundary enforcement, validation rules.</rule>
+      <rule>Omit topics that duplicate guarantees already enforced by the language, type system, or framework (e.g., type checks in compiled languages, schema enforcement by an ORM, validation built into a framework). When a behavior is fully covered by such guarantees, note that in the spec instead of listing a verification topic for it.</rule>
+      <rule>Include integration topics for cross-stage handoff points — boundaries where the current stage's output feeds into a prior or subsequent stage's input.</rule>
     </tests_and_verification_design>
 
     <reference_and_scope_discipline>

@@ -15,7 +15,7 @@ description: "Audits specs marked as Implemented in specs/architecture.md agains
       <rule>Read the spec thoroughly — understand desired behavior, implementation steps, dependencies, scope boundary, and the "Tests and verification" section.</rule>
       <rule>Understand the existing codebase — read the implemented code and existing tests to establish what is actually in place.</rule>
       <rule>Verify feature implementation — walk through each item in "Desired behavior" and "Implementation steps" and confirm the code covers it.</rule>
-      <rule>Verify tests and verification — confirm every item in "Tests and verification" has a corresponding, passing test. Missing or incomplete tests count as gaps.</rule>
+      <rule>Verify tests and verification — confirm every verification topic in "Tests and verification" has a corresponding, passing test. Each top-level item is one verification topic mapping to one test; verify the test exists and covers the behavioral checks listed under the topic. Missing or incomplete tests count as gaps.</rule>
       <rule>Run all tests — execute the full test suite. Record any failures or warnings.</rule>
     </workflow>
   </policy>

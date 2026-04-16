@@ -8,6 +8,14 @@
   </objective>
 
   <policy>
+    <structural_compliance>
+      <rule>Run this structural check first, before any content assessment. Structural violations are high-severity issues — a one-shot implementer follows the spec literally, so wrong structure causes wrong output.</rule>
+      <checks>
+        <check>**Required sections only.** The required set is: Title, Status, Goal, Dependencies, optional Read first, Desired behavior, Scope boundary, Implementation steps, Tests and verification, Out of scope. Flag any section that falls outside this list — the spec structure is exhaustive and additional sections are not permitted. Flag any missing required section.</check>
+        <check>**Verification topic format.** Each top-level item in "Tests and verification" must be a verification topic — a descriptive heading grouping ~2–3 related behavioral checks (e.g., "**Token refresh** — refresh triggers before expiry, returns a valid token, updates stored credentials"). Flag flat lists where each bullet is one isolated behavioral check instead of a grouped topic.</check>
+      </checks>
+    </structural_compliance>
+
     <intent>
       <rule>Read the spec thoroughly and surface any issue that could affect a correct, complete implementation — not limited to format or structure.</rule>
       <rule>This includes but is not limited to:</rule>
@@ -27,7 +35,7 @@
         <classification>**Guardrail violation** (contradicts `specs/intent.md`, `specs/security.md`, or `specs/testing.md`): remove from implementation sections, place in no future stage file, and flag it for the global **Out of scope** section in `specs/architecture.md` with a note citing the guardrail constraint it violates. Mention the removal in the assessment summary.</classification>
         <classification>All relocated aspects go into the current spec's **Out of scope** section. Use one bullet per destination: lead with a single link to the destination file (future stage spec or `specs/architecture.md`), followed by a comma-separated list of the deferred items sharing that destination. Write the removed content into the target stage file so it remains implementable — the Out of scope entry is only the pointer.</classification>
       </relocation_classification>
-      <rule>test design quality: verify items should map to grouped, cohesive test functions — not 1:1. Flag when the spec treats its verify list as a test count target, when tests duplicate guarantees already enforced by the language, type system, or framework instead of targeting behavioral correctness, or when cross-stage handoff points lack integration tests</rule>
+      <rule>test design quality: flag verification topics that duplicate guarantees already enforced by the language, type system, or framework instead of targeting behavioral correctness, and flag when cross-stage handoff points lack integration topics</rule>
       <rule>false underspecification: requirements that appear missing in the current spec but are already established in `specs/features.md` — flag these only when the dependency link to `features.md` is missing, not when the behavior itself is covered</rule>
       <rule>logical gaps where specified behavior, commands, scripts, or workflows would fail under the spec's own stated constraints or preconditions</rule>
       <rule>unstated assumptions that an implementer would need to guess at</rule>

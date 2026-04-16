@@ -35,9 +35,8 @@ Every stage file uses the same required sections:
 6. **Desired behavior (specification)** — what the stage delivers, stated concretely before any execution detail
 7. **Scope boundary** — what belongs to this stage and what doesn't
 8. **Implementation steps** — how to build it
-9. **Tests and verification** — how to prove it works
-10. **Documentation updates** — what to update in features.md and elsewhere
-11. **Out of scope** — explicitly excluded, including future-stage notes when they reduce ambiguity
+9. **Tests and verification** — each top-level item is a verification topic grouping related behavioral checks
+10. **Out of scope** — explicitly excluded, including future-stage notes when they reduce ambiguity
 
 Paragraph discipline: one requirement per paragraph, outcomes before implementation detail, consistent terminology across all files.
 

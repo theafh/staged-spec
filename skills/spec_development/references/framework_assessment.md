@@ -64,6 +64,11 @@
         <criterion>Planned stages reference `features.md` for established behavior they build on, rather than referencing implemented stage files.</criterion>
       </feature_documentation_alignment>
 
+      <stage_format_compliance>
+        <criterion>Every planned stage file uses exactly the required section set: Title, Status, Goal, Dependencies, optional Read first, Desired behavior, Scope boundary, Implementation steps, Tests and verification, Out of scope. Flag extra or missing sections.</criterion>
+        <criterion>Each top-level item in "Tests and verification" is a verification topic — a descriptive heading grouping ~2–3 related behavioral checks. Flag flat lists where each bullet is one isolated check instead of a grouped topic.</criterion>
+      </stage_format_compliance>
+
       <terminology_and_cross_file_consistency>
         <criterion>Key terms (component names, concepts, flag names, API surfaces) use the same wording across all spec files.</criterion>
         <criterion>Cross-references between files use valid relative markdown links; section anchors are present when they add precision.</criterion>
