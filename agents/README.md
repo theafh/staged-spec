@@ -22,11 +22,11 @@ Agent definitions for autonomous spec review and repair. Each `.md` file contain
 | VS Code | `check_spec_codex` (GPT-5.4) | `check_spec_opus` (Claude Opus 4.6) | `check_spec_gemini` (Gemini 3.1 Pro) |
 | Cursor | `check_spec_composer` (Composer 2) | `check_spec_codex` (GPT-5.4) | `check_spec_gemini` (Gemini 3.1 Pro) |
 
-Cursor uses Composer 2 instead of Claude Opus 4.6 because Opus carries a high cost multiplier. To swap Composer for Opus in Cursor, edit `deployment.conf` and change the commented-out `replace:` line for `AUTO_SPEC_CHECK_A`.
+Cursor uses Composer 2 because it delivers equivalent reviewer quality at a lower cost multiplier than Claude Opus 4.6. To swap Composer for Opus in Cursor, edit `deployment.conf` and change the commented-out `replace:` line for `AUTO_SPEC_CHECK_A`.
 
 ## Single-Model Agent (`auto_shape_specs`)
 
-`auto_shape_specs` runs as a standalone agent on a single model — it does not delegate to sub-agents. It works in any AI coding IDE that supports the agent file format. Currently tested with VS Code, Cursor, Claude Code, and Codex.
+`auto_shape_specs` runs as a standalone agent on a single model — it performs all assessment and repair within its own execution. It works in any AI coding IDE that supports the agent file format. Currently tested with VS Code, Cursor, Claude Code, and Codex.
 
 ## VS Code Model Override Restrictions
 

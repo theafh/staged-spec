@@ -27,7 +27,8 @@ description: "StagedSpec: Guides iterative development and assessment of project
       <context_hierarchy>
         <rule>Use `specs/features.md` as the authoritative source for all implemented behavior — it defines what the system does today.</rule>
         <rule>Use planned stage files for upcoming work and its dependencies. Stages are relevant while planned; once implemented, their behavioral content lives in `features.md`.</rule>
-        <rule>Treat implemented stage files as historical records for audit and link validation only — source behavioral context from `features.md`.</rule>
+        <rule>Treat implemented and in-progress stage files as historical records for audit and link validation only — source behavioral context from `features.md`.</rule>
+        <rule>**Never reference implemented or in-progress stage files from a planned stage's Dependencies, Desired behavior, Scope boundary, Implementation steps, or Tests and verification.** Already-built behavior is owned by `specs/features.md`, and the correct pointer is always the matching `features.md` topic — the stage that delivered it is irrelevant. Treat an implemented-stage link in any of those sections as an issue to flag during assessment and fix during refinement.</rule>
         <rule>Frame stage content in terms of what the system does today (`features.md`) and what this stage will add — orient toward the present and the future.</rule>
       </context_hierarchy>
       <rule>Keep specs contradiction-free and outcome-focused; include implementation detail only when required for correctness, safety, or integration.</rule>
@@ -42,7 +43,7 @@ description: "StagedSpec: Guides iterative development and assessment of project
       <rule>Never create, modify, or delete a guardrail document as a side-effect of stage creation, refinement, implementation, or status updates.</rule>
       <rule>Changes to guardrail documents require an explicit, direct request from the human user in the current conversation.</rule>
       <rule>When a stage update conflicts with a guardrail document, fix the stage spec to align with the guardrail. Escalate to the user when alignment requires a trade-off or when the conflict touches a core constraint.</rule>
-      <rule>Stage specs may reference guardrail documents (e.g., in a **Read first** section) but must not alter their content.</rule>
+      <rule>Treat guardrail constraints as project-wide defaults that apply to every stage automatically — stage specs comply with them.</rule>
       <rule>Automated or batch workflows that touch multiple specs must skip guardrail documents entirely.</rule>
       <rule>Preserve history when restructuring tracked spec files: use `git mv` for renames/moves and `git rm` for permanent retirement.</rule>
     </decision_rules>
@@ -51,7 +52,8 @@ description: "StagedSpec: Guides iterative development and assessment of project
   <output_contract>
     <response_shape>
       <rule>When initializing a new project or bootstrapping the `/specs` folder, point the user to the spec_init skill.</rule>
-      <rule>When creating, refining, or implementing specs, read [references/single_stage_structure.md](references/single_stage_structure.md).</rule>
+      <rule>When creating a new stage spec or writing content into an existing one, read [references/single_stage_structure.md](references/single_stage_structure.md) for required sections, naming, and formatting.</rule>
+      <rule>When refining or iterating a stage spec toward implementation-readiness (adding detail, removing over-specification, relocating to Out of scope, splitting, merging, or restructuring dependencies), read [references/single_stage_refinement.md](references/single_stage_refinement.md).</rule>
       <rule>When reviewing or checking a single stage spec for implementation readiness, read [references/single_stage_assessment.md](references/single_stage_assessment.md).</rule>
       <rule>When assessing the spec framework as a whole for completeness and coherence, read [references/framework_assessment.md](references/framework_assessment.md).</rule>
       <rule>When creating, validating, or checking alignment against the project intent, read [references/spec_intent.md](references/spec_intent.md).</rule>

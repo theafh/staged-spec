@@ -20,14 +20,14 @@
 
   <policy>
     <modification_rules>
-      <summary>The intent document is a guardrail — it governs all other specs but is not governed by them.</summary>
+      <summary>The intent document is a guardrail — it governs all other specs, and only the human user has authority to change it.</summary>
       <rule>Changes to `specs/intent.md` require an explicit, direct request from the human user in the current conversation; treat side-effect modifications during stage creation, refinement, implementation, or status updates as out of bounds.</rule>
       <rule>When a spec change appears to conflict with the intent document, fix the spec to align with the intent. Escalate to the user when alignment requires a trade-off or when the conflict touches a core architectural commitment.</rule>
     </modification_rules>
 
     <creation_rules>
       <rule>Each item must be falsifiable -- someone should be able to hold it against a diff, a new spec stage, or an agent's output and get a binary yes/no on consistency.</rule>
-      <rule>If the specs are ambiguous or silent on something that should be stated, flag it as `[UNDERSPECIFIED]` rather than inferring intent. During an interactive session, actively surface each underspecified area to the user and ask targeted questions to fill the gap before finalizing the document.</rule>
+      <rule>If the specs are ambiguous or silent on something that should be stated, flag it as `[UNDERSPECIFIED]` and stop; wait for the user to supply the missing intent. During an interactive session, actively surface each underspecified area to the user and ask targeted questions to fill the gap before finalizing the document.</rule>
       <rule>Prefer 15-25 items total across all sections. Fewer if the system is genuinely simple. More means you're drifting into implementation detail.</rule>
       <rule>Keep implementation details out (no file paths, function names, library versions) -- this is a summary of what and why, not how.</rule>
     </creation_rules>

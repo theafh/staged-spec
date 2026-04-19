@@ -40,10 +40,10 @@ Launch all three sub-agents, passing each the current version of the same spec f
 
 **Patience rules — read carefully and follow exactly:**
 
-- Each sub-agent reads the full spec, reads reference files, and performs deep analysis. This routinely takes **several minutes per agent**. Expect to wait. This is normal, not a failure.
+- Each sub-agent reads the full spec, reads reference files, and performs deep analysis. This routinely takes **several minutes per agent**. Expect to wait — this is the expected runtime.
 - An agent is **only finished** when you have received its result text containing its findings.
 - An agent has **only failed** when it returns an explicit error message or a completely empty result. No other condition counts as failure.
-- **A slow agent is not a failed agent.** An agent that has not yet returned is still running. Do not re-launch it, do not replace it, do not report it as unresponsive, and do not speculate about whether it is stalled. Simply wait.
+- **A slow agent is a running agent.** An agent that has not yet returned is still running. Do not re-launch it, do not replace it, do not report it as unresponsive, and do not speculate about whether it is stalled. Simply wait.
 - **Never launch a duplicate of an agent that is still running.** Doing so wastes tokens and creates conflicting results.
 - Do not mention agent timing, speed, or delays in your status updates. Focus only on substance: which agents have returned findings and which you are still waiting for.
 - Do not poll, prompt, or check on running agents — they will return when they are done. Use the `block: true` option when reading agent results so you wait for completion automatically.
@@ -75,7 +75,8 @@ Use these examples to calibrate:
 - **Keep**: "Section A requires idempotent writes, but section B defines an append-only log for the same operation" — behavioral contradiction that produces wrong results
 - **Keep**: "The spec omits error handling for the external API call, leaving the agent to guess between retry, fail-fast, or silent fallback" — ambiguity that causes divergent implementations
 - **Keep**: "Rate limiting is specified here but v2-api-gateway.md already owns that concern" — scope overlap with an existing future spec that should be resolved before implementation
-- **Keep**: "The spec re-defines the auth token format already established in features.md — reference the existing behavior instead of re-specifying it" — missing dependency link to `features.md` for established behavior
+- **Keep**: "The spec re-defines the auth token format already established in features.md — reference the existing behavior defined in features.md as a dependency" — missing dependency link to `features.md` for established behavior
+- **Keep**: "Dependencies links to `v1-stage-2-auth.md` (status ✓ Implemented) — redirect to the matching `features.md#authentication` topic" — implemented-stage leakage; the origin stage is irrelevant once behavior is in `features.md`
 - **Skip**: "Rename the 'process' function to 'handle' for consistency with other stages" — style preference with no implementation impact
 - **Skip**: "Specify the exact cache eviction algorithm" — over-specifies where the spec intentionally leaves room for implementation choice
 
@@ -103,7 +104,7 @@ Use the following classification paths:
 
 #### Later stage in the current version
 
-Criteria: the aspect does not violate any guardrail document but requires capabilities from a later stage within the same version (e.g., a later v1 stage).
+Criteria: the aspect complies with every guardrail document but requires capabilities from a later stage within the same version (e.g., a later v1 stage).
 
 Required actions:
 
@@ -145,11 +146,29 @@ Examples:
 
 This check applies equally to aspects that were already in the spec before this review cycle and to new aspects proposed by consensus findings.
 
+#### Bidirectional audit of existing Out of scope entries
+
+Before finalizing Step 5, audit every Out of scope entry already present in the current spec — not only the relocations performed in this cycle. The contract requires **both records to coexist**: (1) the Out of scope pointer in the source spec, which guides auto-shaping, scope-boundary reasoning, and downstream navigation, and (2) the implementable content in the target file, which is what gets built when the future stage runs. Neither record is redundant with the other; every fix preserves both sides.
+
+For each entry, open the referenced target file (future stage spec or `specs/architecture.md`) and verify each listed deferred item is present there with implementable specification detail.
+
+Repair each mismatch before Step 6 finishes:
+
+- **Missing target file** — create it (`v<version>-stage-<number>-<short-name>.md` with Planned status, or the matching future-version filename) with title, goal, and the deferred content written into Desired behavior or Implementation steps. Register it in `specs/architecture.md`. Keep the source Out of scope entry pointing to the new file.
+- **Missing topic coverage** — add the deferred content to the target file using the spec_development Skill's single_stage_structure reference, placing it in the correct section so the target fully owns the topic. Keep the source Out of scope entry intact.
+- **Stub or underdeveloped coverage** — expand the target entry to the detail level the current spec implies, drawing from the current spec's context and guardrail documents. Keep the source Out of scope entry intact.
+- **Inconsistent ownership** — consolidate ownership in one file and correct the Out of scope pointer in the current spec to match the real owner. Both the corrected pointer and the target content remain.
+- **Missing source pointer** — when a target stage already owns detail for a topic that an earlier stage's scope would otherwise include, but the earlier stage has no Out of scope pointer to that target, add the pointer to the earlier stage's Out of scope section and leave the target content unchanged.
+
+Every fix must restore the bidirectional contract without removing either side: the source Out of scope entry and the target file both exist and agree on what is deferred. Record these repairs in the final summary alongside new relocations.
+
 ### Step 6 — Apply
 
-Use the spec_development Skill (read in Step 1) as your guide for spec structure and quality standards. Follow its required section structure, paragraph discipline, reference discipline, and scope boundary rules when making any edits.
+Use the spec_development Skill (read in Step 1) as your guide. For shape and formatting, follow the single_stage_structure reference — required sections, paragraph discipline, reference discipline, scope boundary, and Out of scope format. For the fix itself, follow the single_stage_refinement reference and pick from its full menu of moves (add clarifying detail, remove over-specification, relocate to Out of scope, split into a new stage, merge with an adjacent stage, reorder dependencies). Choose the move that best fits each surviving issue — avoid defaulting to additive fixes when the issue calls for removal, relocation, or a structural move.
 
 Apply surviving improvements directly to the spec file with targeted edits. Preserve the spec's existing voice, structure, and intent. Edit only sections affected by the consensus findings, stage-appropriateness relocations, and intent-alignment corrections from Step 5. When resolving gaps, use `specs/features.md` (current system behavior), guardrail documents (constraints), and the codebase to provide concrete fixes aligned with the project. Frame all behavioral context in terms of what the system currently does (from `features.md`) and what this stage will add — orient toward present capabilities and planned outcomes.
+
+**Never inject or leave in place a link to an implemented (`✓ Implemented`) or in-progress (`In Progress`) stage file from Dependencies, Desired behavior, Scope boundary, Implementation steps, or Tests and verification.** Already-built behavior is owned by `specs/features.md` and must be referenced there — the stage that originally delivered it is irrelevant for forward-looking specs. If a consensus finding asks you to add a dependency on behavior that already exists, resolve it to the matching `features.md` topic, not to the past stage. If the spec already contains such a stage-file reference, replace it with the `features.md` pointer during the fix pass even if no reviewer flagged it — this is a correctness invariant, not an optional style concern.
 
 When creating or modifying Out of scope entries for relocated aspects, keep each entry to one short boundary note with one concise reference to the target stage file.
 
@@ -164,4 +183,4 @@ Stop when either:
 - No consensus findings remain after Step 3, or
 - All consensus findings are filtered out in Step 4 and no stage-appropriateness or intent-alignment issues are found in Step 5
 
-The final outcome should be the improved spec itself, not just a report of potential changes. If any aspects were relocated to other stage files, include a brief summary of what was moved and where. If any intent conflicts were flagged as `[INTENT CONFLICT — REQUIRES DECISION]`, list them at the end so the user can resolve them.
+The final outcome is the improved spec file with all fixes applied — deliver the changes directly to the affected files. If any aspects were relocated to other stage files, include a brief summary of what was moved and where. If any intent conflicts were flagged as `[INTENT CONFLICT — REQUIRES DECISION]`, list them at the end so the user can resolve them.

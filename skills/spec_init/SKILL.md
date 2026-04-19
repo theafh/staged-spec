@@ -12,7 +12,7 @@ description: "Bootstraps the StagedSpec framework in a new project: creates the 
 
   <inputs>
     <input>Analyze whatever the user has provided: PRDs, design docs, existing code, README, or a verbal description.</input>
-    <input>Treat existing code as signal for intent — what commitments and constraints it reveals — rather than content to copy into guardrail documents.</input>
+    <input>Treat existing code as signal for intent — extract the commitments and constraints it reveals as outcome-level statements for guardrail documents, keeping implementation details out.</input>
   </inputs>
 
   <policy>

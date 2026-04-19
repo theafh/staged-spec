@@ -31,12 +31,11 @@ Every stage file uses the same required sections:
 2. **Status** — Planned | In Progress | Implemented
 3. **Goal** — one sentence, the outcome
 4. **Dependencies and prior links** — what this stage builds on
-5. **Read first** (optional) — prerequisite docs like security.md or testing.md
-6. **Desired behavior (specification)** — what the stage delivers, stated concretely before any execution detail
-7. **Scope boundary** — what belongs to this stage and what doesn't
-8. **Implementation steps** — how to build it
-9. **Tests and verification** — each top-level item is a verification topic grouping related behavioral checks
-10. **Out of scope** — explicitly excluded, including future-stage notes when they reduce ambiguity
+5. **Desired behavior (specification)** — what the stage delivers, stated concretely before any execution detail
+6. **Scope boundary** — what belongs to this stage and what doesn't
+7. **Implementation steps** — how to build it
+8. **Tests and verification** — each top-level item is a verification topic grouping related behavioral checks
+9. **Out of scope** — explicitly excluded, including future-stage notes when they reduce ambiguity
 
 Paragraph discipline: one requirement per paragraph, outcomes before implementation detail, consistent terminology across all files.
 

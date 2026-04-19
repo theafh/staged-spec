@@ -2,7 +2,7 @@
   <role>Single Stage Structure</role>
 
   <objective>
-    Stage spec creation and refinement.
+    Defines what a single stage spec must look like — required sections, naming, paragraph discipline, dependency discipline, scope boundary, and Out of scope formatting. For the refinement workflow and the menu of moves that bring a stage toward implementation-readiness, see [single_stage_refinement.md](single_stage_refinement.md). For the assessment pass that flags issues, see [single_stage_assessment.md](single_stage_assessment.md).
   </objective>
 
   <inputs>
@@ -26,13 +26,17 @@
     </version_tiers>
     <rule>Enforce version dependency order: each version builds on all prior completed versions, and each numbered stage builds on earlier stages within its version.</rule>
     <rule>Name future spec files without stage numbers until order is committed; when order is committed, rename them to staged filenames that reflect dependency order.</rule>
+    <stage_placement_on_creation>
+      <rule>Place every new planned stage at the position its dependencies dictate — insert it immediately after its latest prerequisite so later stages build on a stable foundation.</rule>
+      <rule>When a split produces new stages inside a tier whose stages are already ordered, number the new stages sequentially at their correct slot and renumber every later stage in the same tier to keep the chain contiguous. Use `git mv` for renames and update references in `specs/architecture.md` and every cross-reference that names a renumbered file.</rule>
+      <rule>Choose the destination tier by matching the new stage's scope against the tier purposes declared in `specs/architecture.md` (typically v1 = minimum working product, v2 = core differentiators, v3 = advanced enhancements). A new stage may move to a later tier than the source when its scope fits that tier's purpose; within the chosen tier, place it where it is the base for the stages that follow.</rule>
+    </stage_placement_on_creation>
     <rule>Use exactly this required stage structure. These sections are the complete and exhaustive set — every piece of stage content belongs in one of these sections. Integrate all information into the matching section; create no additional sections.</rule>
     <required_stage_structure>
       <item>Title line with the stage name</item>
       <item>`**Status**:` Planned | In Progress | ✓ Implemented</item>
       <item>`**Goal**:` one-sentence outcome</item>
-      <item>**Dependencies**: link to `specs/features.md` for established behavior this stage builds on, and to earlier planned stage files for capabilities this stage requires that are not yet implemented. Use valid relative markdown links (e.g., `[Features — Auth](../features.md#authentication)`, `[Stage 3 — Auth](v1-stage-3-auth.md)`).</item>
-      <item>Optional **Read first** for prerequisite docs when relevant (for example `specs/security.md`, `specs/testing.md`)</item>
+      <item>**Dependencies**: link to `specs/features.md` for every piece of already-implemented behavior this stage builds on, and to earlier planned stage files only for capabilities those planned stages will introduce that this stage requires. **Never reference implemented or in-progress stage files as dependencies** — once a stage reaches `✓ Implemented` or `In Progress`, its behavior is owned by `specs/features.md` and that is the only correct pointer, regardless of which stage originally delivered it. The origin stage becomes irrelevant the moment the behavior is recorded in `features.md`. Use valid relative markdown links (e.g., `[Features — Auth](../features.md#authentication)`, `[Stage 4 — Session refresh (Planned)](v1-stage-4-session-refresh.md)`).</item>
       <item>**Desired behavior (specification)**</item>
       <item>**Scope boundary**</item>
       <item>**Implementation steps**</item>
@@ -63,7 +67,7 @@
 - **Auth failure handling** — invalid credentials return 401, expired tokens trigger refresh, malformed tokens are rejected
       </format_example>
       <rule>Prioritize topics that catch silent correctness bugs — behavioral errors where a wrong implementation appears to work until edge conditions surface. Examples: error classification logic, retry/backoff math, boundary enforcement, validation rules.</rule>
-      <rule>Omit topics that duplicate guarantees already enforced by the language, type system, or framework (e.g., type checks in compiled languages, schema enforcement by an ORM, validation built into a framework). When a behavior is fully covered by such guarantees, note that in the spec instead of listing a verification topic for it.</rule>
+      <rule>Omit topics that duplicate guarantees already enforced by the language, type system, or framework (e.g., type checks in compiled languages, schema enforcement by an ORM, validation built into a framework). When a behavior is fully covered by such guarantees, cite the framework guarantee in the spec as the coverage source and reserve verification topics for behavior that requires explicit testing.</rule>
       <rule>Include integration topics for cross-stage handoff points — boundaries where the current stage's output feeds into a prior or subsequent stage's input.</rule>
     </tests_and_verification_design>
 
@@ -76,7 +80,8 @@
         <context_hierarchy>
           <rule>Use `specs/features.md` as the authoritative source for all implemented behavior. Reference feature topics and section anchors — describe what the system does today, sourced from features.md.</rule>
           <rule>Link to planned stage files only when this stage depends on capabilities those planned stages will introduce. These are real prerequisites for future work, not historical records.</rule>
-          <rule>Treat implemented stage files as historical records for audit and link validation only — source behavioral context from `specs/features.md`.</rule>
+          <rule>Treat implemented and in-progress stage files as historical records for audit and link validation only — source all behavioral context from `specs/features.md`.</rule>
+          <rule>**Do not reference implemented or in-progress stage files anywhere outside audit contexts.** Dependencies, Desired behavior, Scope boundary, Implementation steps, and Tests and verification must reference `specs/features.md` for established behavior — never the stage file that originally delivered that behavior. The fact that a capability was built in stage 2 versus stage 5 is irrelevant once it is captured in `features.md`; it is simply an implemented feature. Replace every implemented-stage pointer with the matching `features.md` link.</rule>
         </context_hierarchy>
         <rule>Place one canonical dependency reference per prerequisite within the content. Consolidate repeated references to the same spec into one clear paragraph with one link per target.</rule>
         <rule>When consolidating repeated references, preserve required constraints and context; improve clarity without skipping requirements, introducing scope creep, or over-compressing intent.</rule>
@@ -85,47 +90,42 @@
       <scope_boundary_discipline>
         <rule>Keep stage spec content implementation-focused: describe what this stage will implement and how, grounded in the system's current behavior as documented in `specs/features.md`.</rule>
         <rule>Place all forward-looking references exclusively in the **Out of scope** section. Verify that implementation sections reference only established behavior (`features.md`) and direct planned prerequisites — move any later-stage references to Out of scope.</rule>
-        <rule>Reference `specs/features.md` for established behavior. Reference planned stage files only when they are direct prerequisites for the current stage's implementation.</rule>
-        <rule>Link every mentioned stage or spec with a valid relative markdown link (e.g., `[Features — Auth](../features.md#authentication)`, `[Stage 3 — Auth](v1-stage-3-auth.md)`). Convert bare names to proper links.</rule>
+        <rule>Reference `specs/features.md` for established behavior. Reference planned stage files only when they are direct prerequisites for the current stage's implementation. Implemented and in-progress stage files are never valid references in implementation sections — their behavior is `features.md` content.</rule>
+        <rule>Link every mentioned stage or spec with a valid relative markdown link. Use `[Features — Auth](../features.md#authentication)` for established behavior and `[Stage 4 — Session refresh (Planned)](v1-stage-4-session-refresh.md)` for planned prerequisites. Convert bare names to proper links. Never link to an implemented or in-progress stage file from an implementation section — redirect to the matching `features.md` topic instead.</rule>
       </scope_boundary_discipline>
 
       <relocating_to_out_of_scope>
-        <rule>When moving content from implementation sections to Out of scope, write the relocated detail into the target future-stage file so it remains implementable later. Verify the target file exists and add any detail it lacks.</rule>
-        <rule>Organize the Out of scope section as one bullet point per destination. Each bullet leads with a single link to the destination — a future stage file or `specs/architecture.md` for items globally out of scope — followed by a comma-separated list of the deferred items. Group all items sharing the same destination into one bullet; use one link per bullet, not repeated links.</rule>
-        <rule>Keep Out of scope entries concise: list what was deferred, not why or how it was originally written. Write the removed content into the target stage file so it remains implementable — the Out of scope entry is only the pointer.</rule>
-        <rule>Items that are globally out of scope for the entire project (not deferred to a future stage) go to `specs/architecture.md` and are listed under a single bullet linking there.</rule>
+        <purpose>Out of scope drives staged progression: push scope creep from the current stage into the planned stage that will own the work, so the current stage stays one-shot-implementation-ready and later stages have clear owners for relocated content.</purpose>
+        <rule>Make a planned future stage file (`v<version>-stage-<number>-<short-name>.md` or future `v<version>-<short-name>.md`) the destination for every deferred-but-buildable item. Write the relocated detail into that target file so it remains implementable. When no suitable target exists, create a new planned stage file with Planned status and register it in `specs/architecture.md`.</rule>
+        <rule>Use `specs/architecture.md` as an Out of scope destination **only** for items globally out of scope for the entire project — scope that should never be built because it violates `specs/intent.md`, `specs/security.md`, or `specs/testing.md`, or sits outside the declared project domain. Architecture.md is not a generic destination for misplaced content.</rule>
+        <rule>Link Out of scope entries only at files describing work not yet built. `specs/features.md` and implemented/in-progress stage files record already-built behavior; when the stage builds on them, link from **Dependencies** instead.</rule>
+        <rule>Organize Out of scope as one bullet per destination: lead with a single link to the destination, followed by a comma-separated list of the deferred items sharing that destination. Keep entries concise — list what was deferred, not why or how. The implementable detail lives in the target file; the Out of scope entry is only the pointer.</rule>
       </relocating_to_out_of_scope>
     </reference_and_scope_discipline>
 
-    <spec_refinement>
-      <rule>Guardrail documents (`specs/intent.md`, `specs/security.md`, `specs/testing.md`) are out of scope for refinement passes. When a refinement conflicts with a guardrail, fix the stage spec to align with the guardrail. Escalate to the user when alignment requires a trade-off or touches a core constraint.</rule>
-      <rule>Refine with restraint: preserve intentional implementation flexibility unless additional specificity is required.</rule>
-      <rule>Preserve established, non-contradictory requirements; remove or rewrite only for explicit reasons (contradiction resolution, scope change, or relocation due to split/restructure).</rule>
-      <rule>When moving content between specs, relocate it to the correct file and keep the full spec set complete; always preserve required behavior.</rule>
-      <rule>Reassess dependency quality during refinement:</rule>
-      <dependency_quality_checks>
-        <item>validate prerequisites against `specs/features.md` (implemented behavior) and earlier planned stages (unbuilt prerequisites),</item>
-        <item>evaluate intent as well as wording,</item>
-        <item>reorder or split when forward dependencies or cycles appear.</item>
-      </dependency_quality_checks>
-      <rule>Use the iterative refinement workflow:</rule>
-      <iterative_refinement_workflow>
-        <step>Confirm scope, dependencies, and expected outcome with the user.</step>
-        <step>Draft with the standard stage structure.</step>
-        <step>Review for internal consistency and scope fit.</step>
-        <step>Propose stage splits when topics are independent.</step>
-        <step>Refine until implementation-ready.</step>
-        <step>Re-verify dependency chain before finalizing.</step>
-        <step>Treat refinement as an open-ended iterative loop until the stage is implementation-ready.</step>
-      </iterative_refinement_workflow>
-      <rule>Keep future stages adjustable until implementation; treat planned text as directional, not fixed design.</rule>
-      <rule>Allow changes to already implemented stages when required, and use forward-facing stage design to reduce churn.</rule>
-    </spec_refinement>
+    <code_artifact_naming>
+      <rule>Name every code artifact — files, modules, classes, functions, variables, and tests — after the feature or observable behavior it represents, so each identifier reads as the behavior it delivers. Reserve stage labels (stage numbers, stage short-names, the literal word "stage") for spec files under `specs/` and for `specs/architecture.md`, where they serve as spec-organization markers. Write verification topic headings, and the test function names derived from them, as feature-oriented names describing observable behavior (e.g., `token_refresh`, `auth_failure_handling`).</rule>
+    </code_artifact_naming>
+
+    <phrasing_discipline>
+      <rule>Write **Goal**, **Desired behavior**, **Implementation steps**, and **Tests and verification** as direct, positive statements of what the system does, accepts, returns, or enforces. A one-shot implementer builds from the wording literally — contrastive or negated framings ("not X", "unlike Y", "this is not Z") force the implementer to infer the real behavior from an implied contrast and cause divergence during refinement and implementation.</rule>
+      <rule>Rewrite contrastive statements as direct ones while preserving every technical detail — error codes, edge cases, thresholds, and constraints stay intact in the rewrite.</rule>
+      <transformation_examples>
+        <example>"The parser does not accept trailing commas" → "The parser rejects trailing commas and raises `SYNTAX_ERROR` at the offending position."</example>
+        <example>"Unlike the legacy handler, this one returns JSON" → "The handler returns JSON with `Content-Type: application/json`."</example>
+        <example>"This is not a streaming API" → "The API returns the full response body in a single synchronous call."</example>
+      </transformation_examples>
+      <rule>**Scope boundary** and **Out of scope** may state exclusions directly — exclusion is their purpose. Write them as concrete boundaries (what is deferred, which file owns what), not as definitions of in-scope behavior through negation.</rule>
+    </phrasing_discipline>
+
+    <refinement_pointer>
+      <rule>When refining or iterating a stage spec toward implementation-readiness, follow [single_stage_refinement.md](single_stage_refinement.md). It defines the refinement workflow and the full menu of moves (add detail, remove over-specification, relocate to Out of scope, split, merge, reorder dependencies).</rule>
+    </refinement_pointer>
   </policy>
 
   <output_contract>
     <after_spec_execution>
-      <rule>Keep guardrail documents (`specs/intent.md`, `specs/security.md`, `specs/testing.md`) unchanged during post-execution updates. If implemented code violates a guardrail, always escalate to the user — marking the stage as implemented or adjusting documentation to paper over the conflict is not acceptable.</rule>
+      <rule>Keep guardrail documents (`specs/intent.md`, `specs/security.md`, `specs/testing.md`) unchanged during post-execution updates. If implemented code violates a guardrail, always escalate to the user. The only acceptable path forward is user-driven resolution; any alternative — including marking the stage implemented or adjusting documentation to fit the conflict — requires explicit user approval through the escalation.</rule>
       <rule>Mark a stage `✓ Implemented` only when definition of done is met:</rule>
       <definition_of_done>
         <item>claimed behavior is verified in the actual codebase (and tests/verifications where applicable), not inferred from plans/drafts,</item>
