@@ -16,7 +16,7 @@ StagedSpec is a methodology for producing implementation-ready software specific
 - **`skills/`** — Eight standalone skills (`spec_init`, `spec_audit`, `spec_check`, `spec_derive_intent`, `spec_feature_update`, `spec_implement`, `spec_validate_intent`, `spec_development`) each with their own `SKILL.md`. `spec_development` is the core skill with a `references/` subdirectory containing detailed guidance for stage structure, stage assessment, framework assessment, and intent documents. `spec_init` is a self-contained bootstrap skill for initializing the `/specs` framework in new projects. The other six are thin skills that delegate to `spec_development` references.
 - **`agents/`** — Autonomous agent configs. `auto_spec_check` orchestrates 3 model-specific reviewers in parallel for majority-vote consensus, but it is not deployed to Codex; `auto_shape_specs` is the Codex-relevant standalone agent. The reviewer triplet for `auto_spec_check` varies by IDE and is configured via `deployment.conf`. See `agents/README.md` for model restrictions and IDE-specific details.
 - **`hooks/`** — Guardrail enforcement assets. This repo currently ships tested hook configs for Claude Code and Cursor. Codex has experimental `hooks.json` support, but this repo does not deploy Codex hooks yet and `deployment.conf` explicitly excludes `hooks/*` for the Codex target.
-- **`scripts/`** — `deployment.sh` adapts and deploys assets to multiple IDEs. Supports both global deployment and per-project deployment via `--project-dir`. For Codex, skills are symlinked into `~/.codex/skills/` (or `<project>/.codex/skills/`), commands are symlinked into `~/.codex/prompts/`, and agents are rewritten into `.toml` files under `~/.codex/agents/`. `deployment.conf` configures per-tool exclusion rules and placeholder replacements (e.g. reviewer agent triplet selection).
+- **`scripts/`** — `deployment.sh` adapts and deploys assets to multiple IDEs. Running it without arguments prints available parameters and examples. Use `--global` for global deployment or `--project-dir` for per-project deployment. For Codex, skills are symlinked into `~/.codex/skills/` (or `<project>/.codex/skills/`), commands are symlinked into `~/.codex/prompts/`, and agents are rewritten into `.toml` files under `~/.codex/agents/`. `deployment.conf` configures per-tool exclusion rules and placeholder replacements (e.g. reviewer agent triplet selection).
 
 ## Key Concepts (target project behavior, not this repo)
 
@@ -56,23 +56,23 @@ Requires **jq**, **Bash 4+**, and **git**.
 
 ```bash
 # Preview what would be deployed
-./scripts/deployment.sh --dry-run
+./scripts/deployment.sh --global --dry-run
 
 # Deploy all assets to all configured IDEs (global)
-./scripts/deployment.sh
+./scripts/deployment.sh --global
 
 # Deploy to a specific tool
-./scripts/deployment.sh --target codex
+./scripts/deployment.sh --global --target codex
 
 # Deploy into a single project instead of globally
 ./scripts/deployment.sh --project-dir /path/to/repo --target codex
 
 # Deploy specific artifact type
-./scripts/deployment.sh --type hooks
+./scripts/deployment.sh --global --type hook
 
 # Remove all deployed assets
 ./scripts/deployment.sh --uninstall
 
 # Clear old backups (global deployment only)
-./scripts/deployment.sh --clear-backups
+./scripts/deployment.sh --global --clear-backups
 ```

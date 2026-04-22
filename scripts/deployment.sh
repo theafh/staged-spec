@@ -18,7 +18,8 @@ set -euo pipefail
 #                             replace $VAR$ in the deployed copy only
 #
 # Features:
-#   --type TYPES     Filter by artifact type (rule,command,skill,agent)
+#   --global         Deploy into global config dirs (explicit mode)
+#   --type TYPES     Filter by artifact type (command,skill,agent,hook)
 #   --target TARGETS Filter by deploy target (vscode,claude,cursor,codex,gemini,antigravity)
 #   --project-dir D  Deploy into a project directory instead of global config dirs
 #   --dry-run        Preview changes without applying them
@@ -28,13 +29,16 @@ set -euo pipefail
 #   Backs up only activated targets (disabled in project-dir mode)
 #
 # Usage:
-#   ./deployment.sh                              # autodiscover all
-#   ./deployment.sh --clear-backups              # drop old backups, then create fresh ones
+#   ./deployment.sh                              # show usage and examples
+#   ./deployment.sh --global                     # autodiscover all in global config dirs
+#   ./deployment.sh --global --clear-backups     # drop old backups, then create fresh ones
 #   ./deployment.sh --uninstall                  # uninstall logged artifacts only
-#   ./deployment.sh --type skills,commands       # deploy only skills+commands
-#   ./deployment.sh --target vscode,claude       # deploy only to vscode+claude
+#   ./deployment.sh --global --type skills,commands
+#                                                 # deploy only skills+commands globally
+#   ./deployment.sh --global --target vscode,claude
+#                                                 # deploy only to vscode+claude globally
 #   ./deployment.sh --project-dir /path/to/repo  # deploy into a single project
-#   ./deployment.sh --dry-run                    # preview mode
+#   ./deployment.sh --global --dry-run           # preview global deployment
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -43,15 +47,50 @@ set -euo pipefail
 DRY_RUN=false
 UNINSTALL=false
 CLEAR_BACKUPS=false
+GLOBAL_MODE=false
 TYPE_FILTER=""
 TARGET_FILTER=""
 PROJECT_DIR=""
+ORIGINAL_ARGC=$#
+
+print_usage() {
+  cat <<'USAGE'
+Usage: deployment.sh [OPTIONS]
+
+Run with no arguments to see this help. To deploy to global config directories,
+pass --global explicitly.
+
+Options:
+  --global          Deploy into global config dirs. This is the previous default
+                    behavior of running the script with no arguments.
+  --type TYPES      Comma-separated artifact types to deploy: command,skill,agent,hook
+  --target TARGETS  Comma-separated deploy targets: vscode,claude,cursor,codex,gemini,antigravity
+  --project-dir DIR Deploy into a project directory instead of global config dirs.
+                    Backups are disabled in this mode.
+  --uninstall       Uninstall mode; remove matching logged deployed artifacts after backup
+  --clear-backups   Remove old backups for selected targets before creating new backups
+  --dry-run         Preview changes without applying them
+  -h, --help        Show this help message
+
+Examples:
+  ./scripts/deployment.sh
+  ./scripts/deployment.sh --global
+  ./scripts/deployment.sh --global --dry-run
+  ./scripts/deployment.sh --global --target codex
+  ./scripts/deployment.sh --project-dir /path/to/repo --target claude
+  ./scripts/deployment.sh --uninstall
+USAGE
+}
 
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --global)
+      GLOBAL_MODE=true
+      shift
+      ;;
     --dry-run)
       DRY_RUN=true
       shift
@@ -77,19 +116,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h|--help)
-      cat <<'USAGE'
-Usage: deployment.sh [OPTIONS]
-
-Options:
-  --type TYPES      Comma-separated artifact types to deploy: command,skill,agent
-  --target TARGETS  Comma-separated deploy targets: vscode,claude,cursor,codex,gemini,antigravity
-  --project-dir DIR Deploy into a project directory instead of global config dirs.
-                    Backups are disabled in this mode.
-  --uninstall       Uninstall mode; remove matching logged deployed artifacts after backup
-  --clear-backups   Remove old backups for selected targets before creating new backups
-  --dry-run         Preview changes without applying them
-  -h, --help        Show this help message
-USAGE
+      print_usage
       exit 0
       ;;
     *)
@@ -99,9 +126,19 @@ USAGE
   esac
 done
 
+if [[ "$ORIGINAL_ARGC" -eq 0 ]]; then
+  print_usage
+  exit 0
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 HOME_DIR="${HOME}"
+
+if [[ "$GLOBAL_MODE" == true && -n "$PROJECT_DIR" ]]; then
+  echo "Error: --global and --project-dir cannot be used together." >&2
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # Project-dir mode — validate and resolve
@@ -1432,6 +1469,8 @@ echo ""
 echo "Repo root:     $REPO_ROOT"
 if [[ -n "$PROJECT_DIR" ]]; then
   echo "Project dir:   $PROJECT_DIR"
+elif [[ "$GLOBAL_MODE" == true ]]; then
+  echo "Global mode:   enabled"
 else
   echo "Home:          $HOME_DIR"
 fi

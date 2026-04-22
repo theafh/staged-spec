@@ -1,6 +1,6 @@
 # Deployment
 
-`deployment.sh` deploys StagedSpec assets (commands, skills, agents, hooks) from this repo into the config directories of supported agentic IDEs. By default it targets global config directories (`~/.claude`, `~/.cursor`, etc.), but `--project-dir` redirects deployment into a single project directory instead. It uses symlinks where possible so edits to source files take effect immediately, and falls back to copying or format conversion when a target requires it. `deployment.conf` can also force a copied deployment for selected paths and replace placeholders in the deployed copy.
+`deployment.sh` deploys StagedSpec assets (commands, skills, agents, hooks) from this repo into the config directories of supported agentic IDEs. Running it without arguments prints the available parameters and usage examples. Use `--global` to deploy into global config directories (`~/.claude`, `~/.cursor`, etc.), or `--project-dir` to redirect deployment into a single project directory instead. It uses symlinks where possible so edits to source files take effect immediately, and falls back to copying or format conversion when a target requires it. `deployment.conf` can also force a copied deployment for selected paths and replace placeholders in the deployed copy.
 
 ## Supported Targets
 
@@ -136,26 +136,29 @@ Allow everything for Cursor (empty section or omit the section entirely):
 Run the script from anywhere; it resolves paths relative to the repo root automatically.
 
 ```bash
-# Deploy all artifacts to all targets (global)
+# Show usage and available parameters
 ./scripts/deployment.sh
 
+# Deploy all artifacts to all targets (global)
+./scripts/deployment.sh --global
+
 # Preview what would happen without writing anything
-./scripts/deployment.sh --dry-run
+./scripts/deployment.sh --global --dry-run
 
 # Deploy only skills and commands
-./scripts/deployment.sh --type skills,commands
+./scripts/deployment.sh --global --type skills,commands
 
 # Deploy only to VS Code and Cursor
-./scripts/deployment.sh --target vscode,cursor
+./scripts/deployment.sh --global --target vscode,cursor
 
 # Combine filters
-./scripts/deployment.sh --type commands --target gemini --dry-run
+./scripts/deployment.sh --global --type commands --target gemini --dry-run
 
 # Deploy into a single project directory instead of global config
 ./scripts/deployment.sh --project-dir /path/to/repo --target claude
 
 # Remove old backups before creating fresh ones
-./scripts/deployment.sh --clear-backups
+./scripts/deployment.sh --global --clear-backups
 
 # Uninstall all previously deployed artifacts
 ./scripts/deployment.sh --uninstall
@@ -171,6 +174,7 @@ Run the script from anywhere; it resolves paths relative to the repo root automa
 
 | Flag | Description |
 | :--- | :--- |
+| `--global` | Deploy into global config dirs. This is the previous no-argument behavior. |
 | `--type TYPES` | Comma-separated artifact types to deploy: `command`, `skill`, `agent`, `hook` |
 | `--target TARGETS` | Comma-separated targets: `vscode`, `claude`, `cursor`, `codex`, `gemini`, `antigravity` |
 | `--project-dir DIR` | Deploy into a project directory instead of global config dirs. Backups are disabled in this mode. |
@@ -185,10 +189,10 @@ Run the script from anywhere; it resolves paths relative to the repo root automa
 
 ```bash
 # Preview first to see what will be deployed
-./scripts/deployment.sh --dry-run
+./scripts/deployment.sh --global --dry-run
 
 # Deploy everything
-./scripts/deployment.sh
+./scripts/deployment.sh --global
 ```
 
 ### Updating after source changes
@@ -201,7 +205,7 @@ Since most artifacts are symlinked, changes to source files in `commands/`, `ski
 - You modified hook configs (hooks are copied, not symlinked)
 
 ```bash
-./scripts/deployment.sh
+./scripts/deployment.sh --global
 ```
 
 ### Per-project deployment
@@ -249,7 +253,7 @@ Backups are disabled because project files are expected to be version-controlled
 Backups accumulate over time. Remove old ones before a fresh deploy:
 
 ```bash
-./scripts/deployment.sh --clear-backups
+./scripts/deployment.sh --global --clear-backups
 ```
 
 This removes only backups that match the managed naming pattern (`~/<config>_YYYYMMDD_HHMMSS`).

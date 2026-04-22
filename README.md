@@ -82,7 +82,7 @@ The original slash commands are archived in `commands/.legacy/` for backward com
 
 ## Deployment
 
-StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool configuration file (`scripts/deployment.conf`) controls which assets ship to each tool. Deployment can target global config directories (the default) or a single project directory via `--project-dir`, keeping skills, agents, and hooks scoped to repos that actually use staged specs. The current rules exclude unsupported or not-yet-wired features per tool and block all legacy command files from deployment across every target. For example, Codex hook support exists in Codex itself but is not yet deployed by this repo.
+StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool configuration file (`scripts/deployment.conf`) controls which assets ship to each tool. Running the script without arguments prints the available parameters and usage examples. Use `--global` for the previous "deploy everything to global config directories" behavior, or `--project-dir` to deploy into a single project directory instead. The current rules exclude unsupported or not-yet-wired features per tool and block all legacy command files from deployment across every target. For example, Codex hook support exists in Codex itself but is not yet deployed by this repo.
 
 ## Guardrail Enforcement
 

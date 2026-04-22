@@ -20,7 +20,7 @@ StagedSpec is a methodology for producing implementation-ready software specific
   - `check_spec_codex` (GPT-5.4), `check_spec_opus` (Claude Opus 4.6), `check_spec_composer` (Composer 2), `check_spec_gemini` (Gemini 3.1 Pro) — independent reviewer agents used as sub-agents by `auto_spec_check`.
   - See `agents/README.md` for model restrictions, IDE-specific triplets, and VS Code cost-multiplier workarounds.
 - **`hooks/`** — Guardrail enforcement. `protect-guardrails.sh` blocks edits to guardrail docs unless the branch name contains both `guardrail` and `spec`. JSON configs for Claude Code and Cursor.
-- **`scripts/`** — `deployment.sh` adapts and deploys assets to multiple IDEs (symlink for Claude Code/Cursor, copy for Cursor agents, format conversion for Codex/Gemini/Antigravity). Supports both global deployment (`~/.claude`, `~/.cursor`, etc.) and per-project deployment via `--project-dir`. `deployment.conf` configures per-tool exclusion rules and placeholder replacements (e.g., reviewer agent triplet selection).
+- **`scripts/`** — `deployment.sh` adapts and deploys assets to multiple IDEs (symlink for Claude Code/Cursor, copy for Cursor agents, format conversion for Codex/Gemini/Antigravity). Running it without arguments prints available parameters and examples. Use `--global` for global deployment (`~/.claude`, `~/.cursor`, etc.) or `--project-dir` for per-project deployment. `deployment.conf` configures per-tool exclusion rules and placeholder replacements (e.g., reviewer agent triplet selection).
 
 ## Key Concepts (target project behavior, not this repo)
 
@@ -54,23 +54,23 @@ Requires **jq**, **Bash 4+**, and **git**.
 
 ```bash
 # Preview what would be deployed
-./scripts/deployment.sh --dry-run
+./scripts/deployment.sh --global --dry-run
 
 # Deploy all assets to all configured IDEs (global)
-./scripts/deployment.sh
+./scripts/deployment.sh --global
 
 # Deploy to a specific tool
-./scripts/deployment.sh --target claude-code
+./scripts/deployment.sh --global --target claude
 
 # Deploy into a single project instead of globally
 ./scripts/deployment.sh --project-dir /path/to/repo --target claude
 
 # Deploy specific artifact type
-./scripts/deployment.sh --type hooks
+./scripts/deployment.sh --global --type hook
 
 # Remove all deployed assets
 ./scripts/deployment.sh --uninstall
 
 # Clear old backups (global deployment only)
-./scripts/deployment.sh --clear-backups
+./scripts/deployment.sh --global --clear-backups
 ```
