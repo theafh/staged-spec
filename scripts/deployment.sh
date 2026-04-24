@@ -132,11 +132,46 @@ if [[ "$ORIGINAL_ARGC" -eq 0 ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 HOME_DIR="${HOME}"
 
 if [[ "$GLOBAL_MODE" == true && -n "$PROJECT_DIR" ]]; then
   echo "Error: --global and --project-dir cannot be used together." >&2
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Asset folders — folder name determines artifact type.
+# Declared here (before REPO_ROOT discovery) so root auto-discovery can use
+# the same folder list as artifact discovery below.
+# ---------------------------------------------------------------------------
+declare -A ASSET_FOLDERS=(
+  [agents]="agent"
+  [commands]="command"
+  [skills]="skill"
+  [hooks]="hook"
+)
+
+# ---------------------------------------------------------------------------
+# Discover REPO_ROOT by walking up from SCRIPT_DIR until we find a directory
+# that contains at least one artifact folder (keys of ASSET_FOLDERS). Keeps
+# the script location-independent — works no matter how deeply nested it is.
+# ---------------------------------------------------------------------------
+REPO_ROOT="$SCRIPT_DIR"
+while [[ "$REPO_ROOT" != "/" ]]; do
+  _found_artifact_folder=false
+  for _folder in "${!ASSET_FOLDERS[@]}"; do
+    if [[ -d "$REPO_ROOT/$_folder" ]]; then
+      _found_artifact_folder=true
+      break
+    fi
+  done
+  $_found_artifact_folder && break
+  REPO_ROOT="$(dirname "$REPO_ROOT")"
+done
+unset _folder _found_artifact_folder
+
+if [[ "$REPO_ROOT" == "/" ]]; then
+  echo "Error: could not locate repo root from $SCRIPT_DIR — no artifact folder (${!ASSET_FOLDERS[*]}) found in any ancestor." >&2
   exit 1
 fi
 
@@ -159,16 +194,6 @@ if ! command -v jq &>/dev/null; then
   echo "Error: jq is required but not installed." >&2
   exit 1
 fi
-
-# ---------------------------------------------------------------------------
-# Asset folders — folder name determines artifact type
-# ---------------------------------------------------------------------------
-declare -A ASSET_FOLDERS=(
-  [agents]="agent"
-  [commands]="command"
-  [skills]="skill"
-  [hooks]="hook"
-)
 
 # ---------------------------------------------------------------------------
 # Target directories
