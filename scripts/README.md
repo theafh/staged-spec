@@ -55,11 +55,12 @@ When a `replace:` rule matches an asset path, the script stops using symlinks fo
 
 ### Backups
 
-Every global deployment run backs up the config directories of activated targets before making changes. Backups are timestamped copies placed next to the original directory:
+Every global deployment run backs up the config directories of activated targets before making changes. Backups are timestamped copies placed in `$HOME` as `<name>_<timestamp>`. `<name>` defaults to the basename of the target directory; for VS Code's user-prompts dir on macOS (`~/Library/Application Support/Code/User/prompts`) the basename `prompts` would collide visually with unrelated directories, so the script overrides it to `.vscode-prompts`:
 
 ```text
-~/.claude          ->  ~/.claude_20260330_141500
-~/.cursor          ->  ~/.cursor_20260330_141500
+~/.claude                                                      ->  ~/.claude_20260330_141500
+~/.cursor                                                      ->  ~/.cursor_20260330_141500
+~/Library/Application Support/Code/User/prompts (macOS)        ->  ~/.vscode-prompts_20260330_141500
 ```
 
 Use `--clear-backups` to remove old backups before creating new ones.
@@ -169,6 +170,17 @@ Run the script from anywhere; it resolves paths relative to the repo root automa
 # Show help
 ./scripts/deployment.sh --help
 ```
+
+### Make shortcuts
+
+A top-level `Makefile` wraps the most common runs:
+
+| Target | Equivalent |
+| :--- | :--- |
+| `make deploy` (alias `make install`, `make global`) | `./scripts/deployment.sh --global` |
+| `make uninstall` | `./scripts/deployment.sh --uninstall` |
+
+Use the script directly when you need flags beyond these two cases (`--dry-run`, `--type`, `--target`, `--project-dir`, `--clear-backups`).
 
 ### Flags
 

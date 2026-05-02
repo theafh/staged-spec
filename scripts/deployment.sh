@@ -26,7 +26,12 @@ set -euo pipefail
 #   --uninstall      Remove previously deployed artifacts from deployed_artefacts.log
 #   --clear-backups  Remove old selected backups before creating new ones
 #   Logs deployed artifacts to deployed_artefacts.log with target/source metadata
-#   Backs up only activated targets (disabled in project-dir mode)
+#   Backs up only activated targets (disabled in project-dir mode).
+#   Backups land in $HOME as <name>_<timestamp>, where <name> defaults to
+#   basename(target_dir). The caller can override <name> when the basename
+#   isn't tool-distinctive — e.g. VS Code's user-prompts dir on macOS is
+#   ~/Library/.../prompts, whose basename "prompts" would otherwise produce
+#   a confusing ~/prompts_<timestamp> backup that looks unrelated to VS Code.
 #
 # Usage:
 #   ./deployment.sh                              # show usage and examples
@@ -1299,13 +1304,18 @@ TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 is_managed_backup_path() {
   local app_dir="$1"
   local candidate="$2"
+  local backup_name_override="${3:-}"
 
   [[ "$candidate" = /* ]] || return 1
   [[ "$(dirname "$candidate")" == "$HOME_DIR" ]] || return 1
   [[ "$candidate" != "$app_dir" ]] || return 1
 
   local app_name backup_name suffix
-  app_name="$(basename "$app_dir")"
+  if [[ -n "$backup_name_override" ]]; then
+    app_name="$backup_name_override"
+  else
+    app_name="$(basename "$app_dir")"
+  fi
   backup_name="$(basename "$candidate")"
 
   [[ "$backup_name" == "${app_name}_"* ]] || return 1
@@ -1315,8 +1325,13 @@ is_managed_backup_path() {
 
 clear_old_backups_for_app_dir() {
   local app_dir="$1"
+  local backup_name_override="${2:-}"
   local app_name
-  app_name="$(basename "$app_dir")"
+  if [[ -n "$backup_name_override" ]]; then
+    app_name="$backup_name_override"
+  else
+    app_name="$(basename "$app_dir")"
+  fi
 
   local _old_nullglob
   _old_nullglob="$(shopt -p nullglob)" || true
@@ -1324,7 +1339,7 @@ clear_old_backups_for_app_dir() {
 
   local candidate
   for candidate in "${HOME_DIR}/${app_name}_"*; do
-    if ! is_managed_backup_path "$app_dir" "$candidate"; then
+    if ! is_managed_backup_path "$app_dir" "$candidate" "$backup_name_override"; then
       continue
     fi
 
@@ -1351,8 +1366,13 @@ clear_old_backups_for_app_dir() {
 
 backup_app_dir() {
   local app_dir="$1"
+  local backup_name_override="${2:-}"
   local app_name
-  app_name="$(basename "$app_dir")"
+  if [[ -n "$backup_name_override" ]]; then
+    app_name="$backup_name_override"
+  else
+    app_name="$(basename "$app_dir")"
+  fi
   local backup_dir="${HOME_DIR}/${app_name}_${TIMESTAMP}"
 
   if [[ ! -d "$app_dir" ]]; then
@@ -1523,20 +1543,24 @@ else
   declare -A backed_up=()
   for target in "${APP_TARGETS[@]}"; do
     IFS='|' read -r app_id _label base_dir <<< "$target"
-    backup_roots=("$base_dir")
+    # Each backup_roots entry is "path|backup_name". An empty backup_name
+    # falls back to basename(path). Override the name only when the basename
+    # isn't tool-distinctive — see the header comment for context.
+    backup_roots=("$base_dir|")
     if [[ "$app_id" == "antigravity" ]]; then
-      backup_roots=("${GEMINI_DIR}")
+      backup_roots=("${GEMINI_DIR}|")
     elif [[ "$app_id" == "vscode" ]]; then
-      backup_roots=("${VSCODE_COPILOT_DIR}" "${VSCODE_PROMPTS_DIR}")
+      backup_roots=("${VSCODE_COPILOT_DIR}|" "${VSCODE_PROMPTS_DIR}|.vscode-prompts")
     fi
 
-    local_backup_root=""
-    for local_backup_root in "${backup_roots[@]}"; do
+    for backup_root_entry in "${backup_roots[@]}"; do
+      local_backup_root="${backup_root_entry%%|*}"
+      local_backup_name="${backup_root_entry#*|}"
       if [[ -z "${backed_up[$local_backup_root]+x}" ]]; then
         if $CLEAR_BACKUPS; then
-          clear_old_backups_for_app_dir "$local_backup_root"
+          clear_old_backups_for_app_dir "$local_backup_root" "$local_backup_name"
         fi
-        backup_app_dir "$local_backup_root"
+        backup_app_dir "$local_backup_root" "$local_backup_name"
         backed_up["$local_backup_root"]=1
       fi
     done

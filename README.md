@@ -84,6 +84,8 @@ The original slash commands are archived in `commands/.legacy/` for backward com
 
 StagedSpec deploys to multiple agentic coding environments — Claude Code, Cursor, Codex, Gemini, and Antigravity. The deployment script (`scripts/deployment.sh`) with a per-tool configuration file (`scripts/deployment.conf`) controls which assets ship to each tool. Running the script without arguments prints the available parameters and usage examples. Use `--global` for the previous "deploy everything to global config directories" behavior, or `--project-dir` to deploy into a single project directory instead. The current rules exclude unsupported or not-yet-wired features per tool and block all legacy command files from deployment across every target. For example, Codex hook support exists in Codex itself but is not yet deployed by this repo.
 
+A top-level `Makefile` exposes `make deploy` (aliases `make install`, `make global`) and `make uninstall` as shortcuts for the two most common runs; see [`scripts/README.md`](scripts/README.md) for the full set of flags.
+
 ## Guardrail Enforcement
 
 Guardrail documents (`intent.md`, `security.md`, `testing.md`) define hard boundaries that no spec refinement should cross. Pre-built hooks block edits to these files unless the git branch name signals deliberate intent. This repo currently ships those hook configs for Claude Code and Cursor; Codex hook deployment is not wired yet. Verification commands check specs and code against the guardrails without being able to modify them. See [METHODOLOGY.md](METHODOLOGY.md) for details on hook configuration and enforcement levels.
