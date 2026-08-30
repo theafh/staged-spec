@@ -6,7 +6,7 @@ VSCODE_user-invocable: false
 VSCODE_disable-model-invocation: false
 VSCODE_model: GPT-5.4
 VSCODE_agents: []
-CURSOR_model: gpt-5.4-high
+CURSOR_model: gpt-5.3-codex
 CURSOR_readonly: true
 CURSOR_is_background: true
 ---

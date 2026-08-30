@@ -1,7 +1,7 @@
 ---
 name: check_spec_composer
 description: Reviews specs for implementation readiness using Composer 2. Use when spec files are created or modified in the specs/ directory.
-CURSOR_model: composer-2
+CURSOR_model: composer-2.5
 CURSOR_readonly: true
 CURSOR_is_background: true
 ---

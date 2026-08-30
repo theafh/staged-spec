@@ -6,7 +6,7 @@ VSCODE_user-invocable: false
 VSCODE_disable-model-invocation: false
 VSCODE_model: Claude Opus 4.6
 VSCODE_agents: []
-CURSOR_model: claude-4.6-opus-high-thinking
+CURSOR_model: claude-opus-4-8-thinking-high
 CURSOR_readonly: true
 CURSOR_is_background: true
 ---
